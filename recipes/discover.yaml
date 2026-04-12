@@ -1,0 +1,73 @@
+name: discover
+description: >
+  Phase 1: Parallax Discovery on source content.
+  Runs a multi-agent investigation to produce a reconciliation document
+  with verified claims and file:line evidence. Output feeds shape-content phase.
+  Based on the parallax-investigation skill — multi-pass, multi-perspective.
+
+context:
+  source_repo: ""        # Required: path to source repository
+  subject_name: ""       # Required: subject name for the reconciliation document
+  output_path: ".design/reconciliation.md"  # Where to write the reconciliation
+
+steps:
+  - id: load-parallax-skill
+    type: agent
+    agent: foundation:explorer
+    prompt: >
+      Load the parallax-investigation skill and prepare a discovery plan for the following source:
+
+      Subject: {{subject_name}}
+      Source repo: {{source_repo}}
+
+      Produce a discovery plan that:
+      1. Lists the key files and directories to investigate
+      2. Identifies the 3 perspectives to investigate from (code tracing, behavior observation, integration mapping)
+      3. Outlines the claim categories to verify (architecture, interfaces, behavior, edge cases)
+      4. Lists any specific questions raised by the subject name
+
+      Write the plan to .design/discovery-plan.md
+
+  - id: run-discovery
+    type: agent
+    agent: foundation:explorer
+    prompt: >
+      Execute Parallax Discovery on the source material.
+      Follow the discovery plan in .design/discovery-plan.md.
+
+      Subject: {{subject_name}}
+      Source repo: {{source_repo}}
+
+      Run three independent investigation passes:
+      1. Code tracing pass — follow execution paths, read source files, verify interfaces
+      2. Behavior observation pass — understand what the system actually does (not just what the code says)
+      3. Integration mapping pass — how components connect, what the contracts are
+
+      For each finding, record:
+      - The claim (specific, verifiable)
+      - Evidence (file:line citations from the source)
+      - Confidence (confirmed / likely / uncertain)
+      - Any discrepancies between passes
+
+  - id: reconcile
+    type: agent
+    agent: foundation:explorer
+    prompt: >
+      Reconcile the three discovery passes into a single authoritative document.
+
+      Subject: {{subject_name}}
+
+      Produce {{output_path}} with:
+      1. Executive summary of what was discovered
+      2. Verified claims (VC-XX format) — each with:
+         - The claim text
+         - File:line evidence
+         - Confidence level
+         - Which passes confirmed it
+      3. Cross-cutting insights (XC-XX) — patterns that span multiple components
+      4. Discrepancies — where passes disagreed and why
+      5. Unknowns — things that couldn't be determined
+      6. Section 5: Educational Diagram Content Guide — which concepts need visualization
+
+      This document is the source of truth for content-strategist. Every section's
+      source_claims will reference VC-XX IDs from this document.

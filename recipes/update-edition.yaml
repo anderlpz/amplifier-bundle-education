@@ -1,0 +1,185 @@
+name: update-edition
+description: >
+  Detect changes in source content and update the minimum necessary set of sections,
+  assets, and deliverables. STAGED — requires human approval of the update plan before
+  execution. One command to keep an existing edition current.
+
+  Usage: amplifier recipe execute education:recipes/update-edition.yaml \
+           with source_repo=/path/to/updated/repo
+
+context:
+  source_repo: ""          # Required: path to source repository (may have changed)
+  force_full_rebuild: false # If true, rebuild everything regardless of change detection
+
+stages:
+  - name: detect-changes
+    description: "Hash source files, identify changed claims, build update plan"
+    steps:
+      - id: compute-hashes
+        type: agent
+        agent: education:edition-manager
+        prompt: >
+          Compute SHA-256 hashes of all files in {{source_repo}} and compare against
+          .edition/source-hashes.json.
+
+          Identify:
+          1. Which source files changed since last edition
+          2. Which source files are new (not in hashes)
+          3. Which source files were deleted
+
+          Force rebuild: {{force_full_rebuild}}
+          If force_full_rebuild is true, treat all files as changed.
+
+          Write the diff to .design/source-diff.json:
+          {
+            "changed": ["file1.py", "file2.rs"],
+            "added": ["file3.md"],
+            "removed": ["file4.py"]
+          }
+
+      - id: trace-impact
+        type: agent
+        agent: education:edition-manager
+        prompt: >
+          Given the source changes in .design/source-diff.json, trace the impact
+          through the education product using the claim mapping in .design/CONTENT-STRATEGY.md.
+
+          1. For each changed source file:
+             - Read .design/reconciliation.md to find which VC-XX claims reference this file
+             - Record which claims are potentially stale
+
+          2. For each potentially stale claim:
+             - Read .design/sections/*.md frontmatter to find sections with this claim in source_claims
+             - Record which sections need review/rewrite
+
+          3. For each affected section:
+             - Read its frontmatter to find asset_refs in diagram blocks
+             - Record which assets may need regeneration
+
+          4. Determine which deliverables are affected:
+             - Any chapter affected → site.html and deck.html need rebuild
+             - Any chapter affected → audio script for that chapter needs update
+
+      - id: build-plan
+        type: agent
+        agent: education:edition-manager
+        prompt: >
+          Synthesize the impact analysis into a concrete, minimal update plan.
+
+          Read the impact analysis from the previous step.
+          Write .design/UPDATE-PLAN.md with:
+
+          1. Summary: what changed in the source, impact at a glance
+          2. Sections to rewrite (list with: chapter number, title, affected claims)
+          3. Assets to regenerate (list with: asset ID, section, reason)
+          4. Deliverables to rebuild (site, deck, audio chapters)
+          5. Estimated scope: N sections, M assets, K deliverables
+          6. Sections NOT affected (explicitly list to show what stays unchanged)
+          7. Recommended next edition number (X.Y → X.Y+1 for minor, X+1.0 for major)
+
+          The goal is the minimum necessary rebuild. Be conservative about what's "affected"
+          — only include sections where the changed facts are actually used.
+
+    approval:
+      required: true
+      prompt: >
+        Update plan is ready for review.
+
+        See .design/UPDATE-PLAN.md for the full impact analysis.
+
+        Approve to proceed with the update.
+        You can also provide guidance in your approval message — e.g.,
+        "skip section 3", "also update section 8 even though it wasn't flagged",
+        or "rebuild everything" to override the minimal plan.
+
+        Your guidance will be available as {{_approval_message}}.
+
+  - name: execute-updates
+    description: "Rewrite sections, regenerate assets, rebuild deliverables"
+    steps:
+      - id: re-verify-claims
+        type: agent
+        agent: foundation:explorer
+        prompt: >
+          Before rewriting sections, verify the changed facts in the source.
+
+          Approval guidance: {{_approval_message}}
+          Update plan: .design/UPDATE-PLAN.md
+
+          For each section marked for rewrite:
+          1. Re-read the relevant source files at {{source_repo}}
+          2. Verify the specific claims that changed (from .design/reconciliation.md)
+          3. Note the updated facts with file:line citations
+
+          Write updated claim notes to .design/updated-claims.md
+          These are temporary — they feed the section rewrite, not the permanent reconciliation.
+
+      - id: update-sections
+        type: foreach
+        items: "{{build-plan.sections_to_update}}"
+        step:
+          id: update-section
+          type: agent
+          agent: education:section-author
+          prompt: >
+            Rewrite section: Chapter {{item.chapter}} — {{item.title}}
+
+            The following claims changed:
+            {{item.affected_claims}}
+
+            Updated facts are in .design/updated-claims.md.
+            The content strategy in .design/CONTENT-STRATEGY.md is unchanged.
+            The existing section is at .design/sections/{{item.filename}} — preserve structure where possible.
+
+            Rewrite only the paragraphs that contain the changed facts.
+            Update source_claims frontmatter if claim IDs changed.
+            Preserve all other content, block structure, and frontmatter.
+
+      - id: regenerate-assets
+        type: foreach
+        items: "{{build-plan.assets_to_regenerate}}"
+        step:
+          id: regen-asset
+          type: agent
+          agent: education:asset-builder
+          prompt: >
+            Regenerate asset: {{item.asset_id}}
+
+            The section content changed. Re-read:
+            - .design/sections/{{item.section_filename}} (updated)
+            - .design/AESTHETIC-GUIDE.md (unchanged — use same visual style)
+            - The per-diagram spec for {{item.asset_id}} in the aesthetic guide
+
+            Produce updated: public/diagrams/{{item.asset_id}}.svg
+
+      - id: rebuild-deliverables
+        type: agent
+        agent: education:edition-manager
+        prompt: >
+          Rebuild the affected deliverables.
+
+          Affected chapters: {{build-plan.affected_chapters}}
+          All sections are now updated. Assets are regenerated.
+
+          Coordinate:
+          1. Rebuild site.html — delegate to education:section-author
+          2. Rebuild deck.html — delegate to education:deck-composer
+          3. Update affected audio scripts — delegate to education:narration-adapter
+             for chapters: {{build-plan.affected_audio_chapters}}
+
+      - id: update-edition
+        type: agent
+        agent: education:edition-manager
+        prompt: >
+          Record the updated edition.
+
+          New edition number from update plan: {{build-plan.new_edition_number}}
+          (or use guidance from approval: {{_approval_message}})
+
+          Update:
+          - .edition/manifest.json with new edition number and timestamp
+          - .edition/source-hashes.json with current source hashes
+          - .edition/section-hashes.json with updated section hashes
+          - .edition/asset-hashes.json with updated asset hashes
+
+          Keep a frozen copy of the previous manifest as .edition/manifest-{prev_edition}.json.

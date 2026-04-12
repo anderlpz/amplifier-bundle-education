@@ -1,0 +1,18 @@
+bundle:
+  name: education-behavior
+  version: 0.1.0
+  description: Education pipeline behavior — agents and context for multi-modal content production
+
+agents:
+  include:
+    - education:agents/content-strategist
+    - education:agents/section-author
+    - education:agents/visual-director
+    - education:agents/asset-builder
+    - education:agents/deck-composer
+    - education:agents/narration-adapter
+    - education:agents/edition-manager
+
+context:
+  include:
+    - education:context/education-instructions.md

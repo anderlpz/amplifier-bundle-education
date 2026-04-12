@@ -1,0 +1,110 @@
+name: generate-assets
+description: >
+  Phase 3: Visual asset generation pipeline (STAGED — has approval gate).
+  Stage 1: visual-director reads sections, establishes aesthetic direction, generates concept images.
+  Human reviews and approves concepts before Stage 2.
+  Stage 2: asset-builder produces production-ready SVG files from approved specs.
+  This recipe uses staged execution to ensure human judgment is applied to visual direction.
+
+context:
+  sections_dir: ".design/sections"   # Input: where section markdown files are
+  aesthetic_ref: ""                  # Optional: art direction reference or URL
+  design_system_path: ".design/DESIGN-SYSTEM.md"  # Optional: existing design system
+
+stages:
+  - name: art-direction
+    description: "Visual director establishes aesthetic identity and generates concept images"
+    steps:
+      - id: catalog-assets
+        type: agent
+        agent: education:visual-director
+        prompt: >
+          Read all sections in {{sections_dir}} and build a complete asset catalog.
+          For each section with a diagram, table, or comparison block, document:
+          - The asset ID (from asset_ref in frontmatter, or assign one if missing)
+          - What the diagram needs to show (from section prose)
+          - The conceptual relationship being visualized
+          - Suggested diagram pattern (numbered list, flow, comparison, stack, etc.)
+
+          Write the initial catalog to .design/VISUAL-STRATEGY.md
+
+          Then establish the visual identity:
+          - Read {{design_system_path}} if it exists
+          - Consider the aesthetic reference: {{aesthetic_ref}}
+          - Define the color palette, typography approach, and shape vocabulary
+          - Write these foundations to .design/AESTHETIC-GUIDE.md (draft)
+
+      - id: generate-concepts
+        type: agent
+        agent: education:visual-director
+        prompt: >
+          Generate concept images for the visual assets.
+
+          Read .design/VISUAL-STRATEGY.md for the asset catalog.
+          Read .design/AESTHETIC-GUIDE.md for the aesthetic direction established.
+          Consider the aesthetic reference: {{aesthetic_ref}}
+
+          For each major diagram (FIG-XXa where XX <= first 4 chapters):
+          - Generate 2-3 concept variations using nano-banana
+          - Save to .design/concepts/CONCEPT-{asset_id}-v{N}.png
+          - Note the style decisions in each concept
+
+          Focus on establishing the visual language — color, typography treatment,
+          shape vocabulary, layout principles. Later diagrams will follow this style.
+
+          Produce a concept summary in .design/concepts/CONCEPTS-SUMMARY.md:
+          - Which concepts were generated
+          - The style direction in each one
+          - Your recommendation for which direction to build from
+
+    approval:
+      required: true
+      prompt: >
+        Visual concepts are ready for review.
+
+        Review the concepts in .design/concepts/ and the summary in .design/concepts/CONCEPTS-SUMMARY.md.
+
+        Approve to proceed with asset production using the visual director's recommended direction.
+        Or provide guidance: specify which concept numbers to build from, or describe adjustments.
+
+        Your feedback is available to the asset-builder as {{_approval_message}}.
+
+  - name: asset-production
+    description: "Asset builder produces production SVGs from approved direction"
+    steps:
+      - id: finalize-aesthetic
+        type: agent
+        agent: education:visual-director
+        prompt: >
+          The concept direction has been approved. Approval message: {{_approval_message}}
+
+          Based on the approved concepts and any feedback in the approval message:
+          1. Extract the definitive style specifications from the approved concepts
+          2. Update .design/AESTHETIC-GUIDE.md with production-ready tokens:
+             - Final color values
+             - Typography specifications
+             - Shape vocabulary
+             - Layout principles
+             - Per-diagram specifications
+          3. Update .design/VISUAL-STRATEGY.md with final asset manifest and statuses
+
+          The aesthetic guide is now the production brief for asset-builder.
+
+      - id: build-assets
+        type: foreach
+        items: "{{finalize-aesthetic.pending_assets}}"
+        step:
+          id: build-asset
+          type: agent
+          agent: education:asset-builder
+          prompt: >
+            Build the SVG diagram for: {{item.asset_id}}
+
+            Read .design/AESTHETIC-GUIDE.md for the definitive style specs.
+            Read the per-diagram specification for {{item.asset_id}} in the aesthetic guide.
+            Read the section content for {{item.section_title}} to understand what to show.
+
+            Produce: public/diagrams/{{item.asset_id}}.svg
+
+            After writing, note the file was produced and update
+            .design/VISUAL-STRATEGY.md status for {{item.asset_id}} to "complete".

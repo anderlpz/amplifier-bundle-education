@@ -1,0 +1,104 @@
+name: produce-deliverables
+description: >
+  Phase 4: Generate all three deliverables from completed sections and assets.
+  Produces the HTML reading site, the HTML presentation deck, and voiceover scripts.
+  All steps run from .design/sections/*.md as the single source of truth.
+  Site and deck are standalone HTML files. Audio scripts are plain text per chapter.
+
+context:
+  sections_dir: ".design/sections"   # Input: section markdown files
+  assets_dir: "public/diagrams"      # Input: generated SVG assets
+  output_dir: "."                    # Where to write deliverables
+  subject_name: ""                   # For HTML title and meta tags
+  produce_audio: true                # Whether to produce narration scripts
+
+steps:
+  - id: build-site
+    type: agent
+    agent: education:section-author
+    prompt: >
+      Build the complete HTML reading site from the section content.
+
+      Read all sections in {{sections_dir}} in chapter order.
+      Read .design/DESIGN-SYSTEM.md for visual tokens and component patterns.
+      Read @education:context/deliverable-specs.md for the full site specification.
+
+      Inline all SVG diagrams from {{assets_dir}} using asset_ref mapping from frontmatter.
+
+      Produce: {{output_dir}}/site.html
+
+      The site must include:
+      - Fixed nav bar with TOC toggle and audio player controls
+      - Sticky sidebar TOC with scroll-tracking active state
+      - All chapter sections with proper block rendering
+      - Inline SVG diagrams for all 'ready' diagram blocks
+      - Stub placeholders for 'stub' blocks (audio, vignette, chat)
+      - Presentation mode (CSS + JS — floating "Present" button, arrow-key navigation, speaker notes)
+      - IntersectionObserver scroll-reveal for content blocks
+      - D3 dotgraph viewer for any blocks with variant: interactive
+
+  - id: build-deck
+    type: agent
+    agent: education:deck-composer
+    prompt: >
+      Build the standalone HTML presentation deck from the section content.
+
+      Read all sections in {{sections_dir}} in chapter order.
+      Pay special attention to each section's "Presentation Slides" and "Speaker Notes" blocks.
+      Read @education:context/deliverable-specs.md Deliverable 2 specification.
+
+      Produce: {{output_dir}}/deck.html
+
+      The deck must include:
+      - Arrow-key and touch-swipe navigation
+      - Slide counter (current/total) in corner
+      - Speaker notes panel (N key to toggle, hidden from projected view)
+      - Slide overview mode (Escape key — grid of all slide thumbnails)
+      - Full presentation keyboard controls (F for fullscreen, G+number for go-to)
+      - Same Paper Frame design tokens as site.html
+
+  - id: build-narration
+    type: conditional
+    condition: "{{produce_audio}}"
+    step:
+      id: write-scripts
+      type: foreach
+      items: "{{build-site.audio_blocks}}"
+      step:
+        id: write-script
+        type: agent
+        agent: education:narration-adapter
+        prompt: >
+          Write the voiceover script for: {{item.chapter_title}}
+
+          Read the section content at {{sections_dir}}/{{item.section_filename}}.
+          Follow the voice guidelines in .design/CONTENT-STRATEGY.md.
+          Read @education:context/deliverable-specs.md Deliverable 3 specification.
+
+          Produce: audio/{{item.asset_ref}}.txt
+
+          The script must:
+          - Be adapted for listening (not a verbatim reading)
+          - Replace visual references with verbal descriptions
+          - Use pause markers [pause] appropriately
+          - Include chapter start/end markers and music cue markers
+          - Be approximately {{item.target_minutes}} minutes when spoken at normal pace
+
+  - id: verify-deliverables
+    type: agent
+    agent: foundation:explorer
+    prompt: >
+      Verify all deliverables were produced:
+
+      Check that these files exist:
+      - {{output_dir}}/site.html
+      - {{output_dir}}/deck.html
+      - audio/*.txt (one per chapter)
+
+      Check that site.html:
+      - Opens and renders (check for major HTML errors)
+      - Has the correct number of chapter sections
+      - Has presentation mode controls
+
+      Report any missing deliverables or obvious issues.
+      If everything looks correct, confirm production is complete.

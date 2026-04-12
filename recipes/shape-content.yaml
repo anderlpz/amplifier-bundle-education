@@ -1,0 +1,57 @@
+name: shape-content
+description: >
+  Phase 2: Content strategy and section authoring.
+  Reads the Parallax Discovery reconciliation and produces CONTENT-STRATEGY.md
+  followed by individual section markdown files with proper frontmatter and block composition.
+  Output feeds generate-assets and produce-deliverables phases.
+
+context:
+  reconciliation: ".design/reconciliation.md"  # Path to Parallax Discovery output
+  subject_name: ""                              # Subject name
+  audience: ""                                  # Target audience description (optional)
+  sections_dir: ".design/sections"              # Where to write section files
+
+steps:
+  - id: create-strategy
+    type: agent
+    agent: education:content-strategist
+    prompt: >
+      Analyze the Parallax Discovery reconciliation and produce a complete content strategy.
+
+      Subject: {{subject_name}}
+      Audience: {{audience}}
+      Reconciliation: {{reconciliation}}
+
+      Read the reconciliation document carefully. Then write .design/CONTENT-STRATEGY.md with:
+      1. Voice and tone guidelines calibrated for this subject and audience
+      2. Depth calibration table — which concepts deserve deep treatment vs. overview
+      3. Vocabulary rules — terms that need first-use explanation, banned words, banned framing
+      4. Section outline — one entry per section with primary concept, depth level, visual assets needed
+      5. Source claim mapping — which VC-XX claims feed which sections (internal only)
+      6. Multi-modal guidance — how voice rules apply to audio narration, slides, speaker notes
+
+      Apply the content rules from @education:context/content-model.md throughout.
+
+  - id: write-sections
+    type: foreach
+    items: "{{create-strategy.section_list}}"
+    step:
+      id: write-section
+      type: agent
+      agent: education:section-author
+      prompt: >
+        Write the section markdown for: {{item.title}} (Chapter {{item.chapter}})
+
+        Follow the content strategy in .design/CONTENT-STRATEGY.md exactly.
+        Use the verified claims listed for this section from the reconciliation.
+
+        Section outline entry:
+        {{item.outline_entry}}
+
+        Write to: {{sections_dir}}/{{item.filename}}
+
+        Include:
+        1. Proper YAML frontmatter with all blocks, statuses, and source_claims
+        2. Prose following inductive structure (concrete first, principle second)
+        3. Presentation slides section (condensed bullets)
+        4. Speaker notes section (full explanation for presenter)
