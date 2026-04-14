@@ -1,9 +1,10 @@
 name: discover
 description: >
-  Phase 1: Parallax Discovery on source content.
-  Runs a multi-agent investigation to produce a reconciliation document
-  with verified claims and file:line evidence. Output feeds shape-content phase.
-  Based on the parallax-investigation skill — multi-pass, multi-perspective.
+  Phase 1: Deep understanding of source content via Parallax Discovery.
+  Runs multi-agent, multi-pass analysis to build a verified knowledge base
+  for teaching. The output is NOT an audit — it is a comprehensive understanding
+  of what the system is, how it works, and why it is designed that way.
+  Output feeds shape-content phase as source material for curriculum design.
 
 context:
   source_repo: ""        # Required: path to source repository
@@ -20,11 +21,24 @@ steps:
       Subject: {{subject_name}}
       Source repo: {{source_repo}}
 
+      **Purpose: We are building an education product.** The goal of this discovery
+      is to deeply understand the system so we can teach it to someone else. We are
+      NOT auditing the repo for issues. We are learning how it works so we can
+      explain it clearly.
+
       Produce a discovery plan that:
-      1. Lists the key files and directories to investigate
-      2. Identifies the 3 perspectives to investigate from (code tracing, behavior observation, integration mapping)
-      3. Outlines the claim categories to verify (architecture, interfaces, behavior, edge cases)
-      4. Lists any specific questions raised by the subject name
+      1. Lists the key files and directories to study
+      2. Identifies the 3 learning perspectives:
+         - Code tracing: how the system actually executes (call paths, data flow)
+         - Behavior observation: what the system does from a user's perspective
+         - Integration mapping: how components connect and why they are composed this way
+      3. Outlines the knowledge categories to build:
+         - Core concepts (what does this system do?)
+         - Architecture (how is it structured and why?)
+         - Key mechanisms (how do the important parts work?)
+         - Design decisions (what trade-offs were made and why?)
+         - Usage patterns (how is it meant to be used?)
+      4. Lists the concepts a student would need to understand, in learning order
 
       Write the plan to .design/discovery-plan.md
 
@@ -38,36 +52,70 @@ steps:
       Subject: {{subject_name}}
       Source repo: {{source_repo}}
 
-      Run three independent investigation passes:
-      1. Code tracing pass — follow execution paths, read source files, verify interfaces
-      2. Behavior observation pass — understand what the system actually does (not just what the code says)
-      3. Integration mapping pass — how components connect, what the contracts are
+      **Intent: Build deep understanding for teaching, not auditing.**
+
+      Run three independent understanding passes:
+      1. Code tracing pass: follow execution paths, read source files, understand
+         how the system works at the code level. Map the key data flows and call chains.
+      2. Behavior observation pass: understand what the system does from a user's
+         perspective. What are the inputs, outputs, and observable behaviors?
+      3. Integration mapping pass: understand how components connect, what the
+         contracts between them are, and why the system is composed this way.
 
       For each finding, record:
-      - The claim (specific, verifiable)
-      - Evidence (file:line citations from the source)
+      - The knowledge claim (what we now understand to be true about the system)
+      - Evidence (file:line citations from the source that support this understanding)
       - Confidence (confirmed / likely / uncertain)
-      - Any discrepancies between passes
+      - Which perspectives confirmed it
+
+      Focus on UNDERSTANDING, not on finding problems. The question is "how does
+      this work and why?" not "what is wrong with this?"
 
   - id: reconcile
     type: agent
     agent: foundation:explorer
     prompt: >
-      Reconcile the three discovery passes into a single authoritative document.
+      Synthesize the three discovery passes into a knowledge base for education.
 
       Subject: {{subject_name}}
 
-      Produce {{output_path}} with:
-      1. Executive summary of what was discovered
-      2. Verified claims (VC-XX format) — each with:
-         - The claim text
-         - File:line evidence
-         - Confidence level
-         - Which passes confirmed it
-      3. Cross-cutting insights (XC-XX) — patterns that span multiple components
-      4. Discrepancies — where passes disagreed and why
-      5. Unknowns — things that couldn't be determined
-      6. Section 5: Educational Diagram Content Guide — which concepts need visualization
+      **This document will be used by a content strategist to design a curriculum.
+      Write it as a knowledge base, not as an audit report.**
 
-      This document is the source of truth for content-strategist. Every section's
+      Produce {{output_path}} with:
+
+      1. **System Overview** — What is {{subject_name}}? What problem does it solve?
+         What is its core design philosophy? Write this as a clear explanation,
+         not as findings from an investigation.
+
+      2. **Verified Knowledge (VC-XX format)** — Each item is something we now
+         understand to be true about the system. Each with:
+         - The knowledge claim (stated as a fact about how the system works)
+         - File:line evidence (supporting citations)
+         - Confidence level
+         - Which perspectives confirmed it
+         Frame these as "The system does X because Y" not "We found that X."
+
+      3. **Core Concepts** — The key ideas a student must understand, in suggested
+         teaching order. What depends on what? What must be explained before
+         what else makes sense?
+
+      4. **Design Decisions (XC-XX)** — The architectural choices and trade-offs
+         that make this system what it is. Why was it designed this way instead
+         of another way? These are the "aha moments" in a class.
+
+      5. **Diagram Content Guide** — Which concepts need visual explanation?
+         What would a diagram show? What relationships or flows are hard to
+         explain without a picture?
+
+      **Do NOT include:**
+      - A "Discrepancies" section cataloging inconsistencies between docs and code
+      - A "Gaps" or "Unknowns" section listing things that are missing or broken
+      - Audit language ("we found", "the investigation revealed", "static analysis shows")
+      - Numbered discrepancy IDs (D-XX) or unknown IDs (UNK-XX)
+
+      If something genuinely cannot be determined, note it as a confidence: uncertain
+      on the relevant VC-XX claim, not as a separate unknowns section.
+
+      This document is the source of truth for the content-strategist. Every section's
       source_claims will reference VC-XX IDs from this document.

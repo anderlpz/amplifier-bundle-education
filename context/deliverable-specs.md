@@ -65,7 +65,49 @@ Scrollable content
 - **Scroll-reveal animations** — `IntersectionObserver` entrance for content blocks
 - **D3 dotgraph viewer** (for architecture sections) — compact inline render with fullscreen overlay; zoom (scroll wheel), pan (drag), click-to-highlight nodes
 - **Presentation mode** — floating "Present" button transforms the site into a fullscreen slide deck (arrow-key navigation, speaker notes panel, slide counter)
-- **Audio player** — per-chapter playback via `<audio>` element in the nav bar
+- **Audio player** — per-chapter playback wired to MP3 files (see Audio Player Contract below)
+
+### Audio Player Contract
+
+The audio player is conditional: it is built only when MP3 files exist in `audio/`. When no MP3s are present, the site omits all audio UI elements entirely.
+
+**AUDIO_FILES map:**
+
+The site builder scans `audio/*.mp3` at build time and generates a JavaScript map:
+
+```javascript
+const AUDIO_FILES = {
+  "ch01-introduction": "audio/ch01-introduction.mp3",
+  "ch02-architecture-map": "audio/ch02-architecture-map.mp3",
+  // ... one entry per MP3 file found
+};
+```
+
+Keys are section IDs (matching the chapter `<section id="...">` in the HTML). Values are relative paths to the MP3 files.
+
+**Required controls:**
+
+| Control | Location | Behavior |
+|---------|----------|----------|
+| Nav pill button | Fixed nav bar (right side) | Single play/pause toggle for current chapter. Shows ▶ when paused, ❚❚ when playing. |
+| Per-chapter TOC buttons | Sidebar TOC, next to each chapter entry | Small play/pause icon. Clicking starts that chapter's audio (pauses any other). |
+
+**Required behaviors:**
+
+| Behavior | Description |
+|----------|-------------|
+| Scroll-to-audio sync | `IntersectionObserver` tracks which chapter is in view. When the visible chapter changes, update which audio the nav pill button controls. Do NOT auto-play on scroll. |
+| Auto-advance | When a chapter's audio finishes (`ended` event), load and play the next chapter's audio if it exists in AUDIO_FILES. |
+| Keyboard toggle | `P` key toggles play/pause for the current chapter. |
+| Single `<audio>` element | One shared `<audio>` element in the DOM. Swap its `src` when chapters change. Avoids multiple simultaneous streams. |
+
+**CSS states:**
+
+| State | Selector | Effect |
+|-------|----------|--------|
+| Chapter playing | `.toc-entry.playing` | Accent color highlight on the active TOC entry |
+| Section playing | `section.playing` | Optional subtle indicator on the active section |
+| Nav pill active | `.audio-pill.playing` | Icon swaps from ▶ to ❚❚ |
 
 ### Accessibility
 
@@ -185,6 +227,27 @@ Scripts include markers for podcast-style concatenation:
 ```
 
 The edition manager tracks which MP3s exist vs. which scripts need audio rendering.
+
+### TTS Synthesis
+
+MP3 files are synthesized from the .txt scripts via the `synthesize-audio` recipe:
+
+**Process:**
+1. Strip production markers ([CHAPTER START], [CHAPTER END], [INTRO MUSIC], [OUTRO MUSIC], [BODY], [SECTION])
+2. Replace `[pause]` with `...` (produces a natural pause in TTS)
+3. Replace `[OUTRO: "text"]` with just the quoted text
+4. Chunk cleaned text at paragraph/sentence boundaries (max 4096 characters per API call)
+5. Call OpenAI TTS API for each chunk
+6. Concatenate multi-chunk outputs with ffmpeg (`-f concat -c copy`, no re-encoding)
+
+**Incremental:** Scripts whose .mp3 already has a newer mtime than the .txt are skipped.
+
+**Configuration defaults:**
+- Model: `tts-1-hd` (high quality)
+- Voice: `onyx` (deep, authoritative — good for technical education)
+- Provider: OpenAI (extensible to ElevenLabs in future)
+
+**Dependencies:** `openai` Python package, `ffmpeg` system binary.
 
 ---
 

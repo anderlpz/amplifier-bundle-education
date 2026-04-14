@@ -1,0 +1,98 @@
+name: synthesize-audio
+description: >
+  Convert narration scripts (audio/*.txt) to MP3 audio files via TTS.
+  Strips production markers, chunks text to respect API limits,
+  concatenates multi-chunk outputs, and skips chapters whose MP3
+  is already newer than the source script.
+
+context:
+  audio_dir: "audio"                # Directory containing .txt scripts and .mp3 output
+  tts_provider: "openai"            # "openai" (default); extensible to "elevenlabs" later
+  tts_model: "tts-1-hd"            # OpenAI model: "tts-1" (fast) or "tts-1-hd" (quality)
+  tts_voice: "onyx"                # Voice: onyx (deep, authoritative), alloy, echo, fable, nova, shimmer
+  chunk_limit: 4096                 # Max characters per TTS API call
+
+steps:
+  - id: synthesize
+    type: agent
+    agent: foundation:modular-builder
+    prompt: >
+      Synthesize MP3 audio from narration scripts in {{audio_dir}}/.
+
+      Write a Python script (synthesize_audio.py) that does the following,
+      then execute it with `python synthesize_audio.py`.
+
+      **Inputs:** All .txt files in {{audio_dir}}/
+      **Outputs:** One .mp3 per .txt in {{audio_dir}}/
+
+      **Configuration:**
+      - TTS provider: {{tts_provider}}
+      - Model: {{tts_model}}
+      - Voice: {{tts_voice}}
+      - Chunk character limit: {{chunk_limit}}
+
+      **Step 1 — Discover scripts:**
+      Glob {{audio_dir}}/*.txt. For each .txt, check if a matching .mp3 exists
+      with a modification time newer than the .txt. If so, skip it (incremental).
+      Print which files are skipped and which will be synthesized.
+
+      **Step 2 — Clean script text:**
+      For each .txt that needs synthesis, read the file and strip production markers:
+      - Remove lines matching: [CHAPTER START: ...], [CHAPTER END],
+        [INTRO MUSIC: ...], [OUTRO MUSIC: ...], [BODY], [SECTION: ...]
+      - Replace [pause] with "..." (three dots — produces a natural pause in TTS)
+      - Replace [OUTRO: "..."] with just the quoted text inside
+      - Strip any remaining [...] markers
+      The result is clean prose ready for TTS.
+
+      **Step 3 — Chunk text:**
+      Split the cleaned text into chunks of at most {{chunk_limit}} characters.
+      Split at paragraph boundaries (double newline) first. If a single paragraph
+      exceeds the limit, split at sentence boundaries (period + space).
+      Never split mid-sentence.
+
+      **Step 4 — Call TTS API:**
+      For each chunk, call the OpenAI TTS API:
+
+        from openai import OpenAI
+        client = OpenAI()  # uses OPENAI_API_KEY from environment
+        response = client.audio.speech.create(
+            model="{{tts_model}}",
+            voice="{{tts_voice}}",
+            input=chunk_text,
+            response_format="mp3"
+        )
+        response.stream_to_file(chunk_path)
+
+      Save each chunk as a temporary file: {{audio_dir}}/.chunks/{base}_part{NN}.mp3
+
+      **Step 5 — Concatenate chunks:**
+      If a script produced multiple chunks, concatenate them with ffmpeg:
+
+        # Write a file list for ffmpeg concat
+        with open(list_path, "w") as f:
+            for part in sorted(part_files):
+                f.write(f"file '{part}'\n")
+
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+            "-i", list_path, "-c", "copy", output_mp3
+        ], check=True)
+
+      If only one chunk, just move it to the final path.
+      Clean up the .chunks/ temp directory after concatenation.
+
+      **Step 6 — Report:**
+      Print a summary: how many scripts synthesized, how many skipped,
+      total MP3 files in {{audio_dir}}/.
+
+      **Error handling:**
+      - If OPENAI_API_KEY is not set, exit with a clear error message.
+      - If ffmpeg is not installed, exit with: "ffmpeg is required for
+        multi-chunk audio concatenation. Install with: brew install ffmpeg
+        (macOS) or apt install ffmpeg (Linux)."
+      - If a TTS call fails, log the error and continue with remaining scripts.
+        Report failures at the end.
+
+      **Dependencies:** openai (Python package), ffmpeg (system binary).
+      Do not install these — just check they exist and error clearly if missing.

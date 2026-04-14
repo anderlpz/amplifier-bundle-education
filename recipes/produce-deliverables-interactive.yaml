@@ -1,0 +1,221 @@
+# Staged (interactive) variant of produce-deliverables.yaml.
+# Compare with produce-deliverables.yaml for the flat (autonomous) version.
+#
+# This recipe pauses at two human checkpoints:
+#   1. After narration scripts — review before spending on TTS synthesis
+#   2. After site build + design review — review before building deck
+#
+# Use this recipe directly when you want to review deliverables as they're built.
+# The flat version is called by full-edition.yaml for autonomous runs.
+
+name: produce-deliverables-interactive
+description: >
+  Phase 4 (interactive): Generate deliverables with human review gates.
+  Pauses after narration scripts (before TTS costs) and after site build
+  (with design-intelligence review) before building the deck.
+
+context:
+  sections_dir: ".design/sections"   # Input: section markdown files
+  assets_dir: "public/diagrams"      # Input: generated SVG assets
+  output_dir: "."                    # Where to write deliverables
+  subject_name: ""                   # For HTML title and meta tags
+  tts_model: "tts-1-hd"             # OpenAI TTS model
+  tts_voice: "onyx"                 # TTS voice (deep, authoritative)
+
+stages:
+  # ── Stage 1: Write narration scripts ─────────────────────────────────────────
+  # Produces audio/*.txt — cheap to generate, expensive to synthesize.
+  # Gate pauses here so you can review voice, pacing, and coverage before
+  # committing to TTS API spend.
+  - name: narration
+    steps:
+      - id: write-scripts
+        type: foreach
+        items: "{{sections_dir}}"
+        step:
+          id: write-script
+          type: agent
+          agent: education:narration-adapter
+          prompt: >
+            Write the voiceover script for: {{item.chapter_title}}
+
+            Read the section content at {{sections_dir}}/{{item.section_filename}}.
+            Follow the voice guidelines in .design/CONTENT-STRATEGY.md.
+            Read @education:context/deliverable-specs.md Deliverable 3 specification.
+
+            Produce: audio/{{item.asset_ref}}.txt
+
+            The script must:
+            - Be adapted for listening (not a verbatim reading)
+            - Replace visual references with verbal descriptions
+            - Use pause markers [pause] appropriately
+            - Include chapter start/end markers and music cue markers
+            - Be approximately {{item.target_minutes}} minutes when spoken at normal pace
+
+      - id: script-summary
+        type: agent
+        agent: foundation:explorer
+        prompt: >
+          Summarize the narration scripts produced in audio/.
+
+          For each .txt file, report:
+          - Filename
+          - Word count
+          - Estimated duration (at 150 words/minute)
+          - First line (to confirm chapter identification)
+
+          Also calculate:
+          - Total word count across all scripts
+          - Estimated total audio duration
+          - Estimated TTS cost at ~$15/1M characters (tts-1-hd pricing)
+
+          Be concise — this summary appears in an approval gate.
+        output: scripts_summary
+
+    approval:
+      required: true
+      prompt: |
+        NARRATION SCRIPTS COMPLETE
+
+        {{scripts_summary}}
+
+        Scripts are in audio/*.txt — review them before TTS synthesis.
+        TTS will call the OpenAI API (model: {{tts_model}}, voice: {{tts_voice}}).
+
+        To proceed: approve (optionally with feedback like "rewrite chapter 3 shorter")
+        To stop: deny
+      timeout: 0
+      default: deny
+
+  # ── Stage 2: Synthesize audio + build site + design review ───────────────────
+  # TTS runs first, then site is built with the audio player wired to the MP3s.
+  # Design-intelligence reviews the site before the gate pauses.
+  - name: production
+    steps:
+      - id: synthesize-audio
+        type: recipe
+        recipe: education:recipes/synthesize-audio.yaml
+        context:
+          audio_dir: "audio"
+          tts_model: "{{tts_model}}"
+          tts_voice: "{{tts_voice}}"
+
+      - id: build-site
+        type: agent
+        agent: education:section-author
+        prompt: >
+          Build the complete HTML reading site from the section content.
+
+          Read all sections in {{sections_dir}} in chapter order.
+          Read .design/DESIGN-SYSTEM.md for visual tokens and component patterns.
+          Read @education:context/deliverable-specs.md for the full site specification.
+
+          Inline all SVG diagrams from {{assets_dir}} using asset_ref mapping from frontmatter.
+
+          Produce: {{output_dir}}/site.html
+
+          The site must include:
+          - Fixed nav bar with TOC toggle and audio player controls
+          - Sticky sidebar TOC with scroll-tracking active state
+          - All chapter sections with proper block rendering
+          - Inline SVG diagrams for all 'ready' diagram blocks
+          - Stub placeholders for 'stub' blocks (audio, vignette, chat)
+          - Presentation mode (CSS + JS — floating "Present" button, arrow-key navigation, speaker notes)
+          - IntersectionObserver scroll-reveal for content blocks
+          - D3 dotgraph viewer for any blocks with variant: interactive
+
+          **Audio player (required if MP3 files exist in audio/):**
+          Check the audio/ directory for .mp3 files. If MP3 files are present,
+          build the chapter audio player per the Audio Player Contract in
+          @education:context/deliverable-specs.md: AUDIO_FILES map, nav pill
+          play/pause button, per-chapter TOC buttons, scroll-to-audio sync,
+          auto-advance, P keyboard shortcut, single shared <audio> element.
+
+          If no MP3 files exist in audio/, omit the audio player entirely.
+        output: site_build_report
+
+      - id: design-review
+        type: agent
+        agent: design-intelligence-enhanced:design-check
+        prompt: >
+          Review {{output_dir}}/site.html against the education bundle's design standards.
+
+          Check for:
+          1. Paper Frame token compliance — canvas #EDEBE6, card #FFFFFF, text contrast ratios
+          2. Typography — Lora for headings, Inter for body, correct weight/size hierarchy
+          3. Layout — max-width constraints, reading column width, wide breakout behavior
+          4. Audio player — if MP3s exist, verify AUDIO_FILES map, nav pill, TOC buttons
+          5. Accessibility — WCAG AA contrast, semantic HTML, focus indicators
+          6. Interactive features — TOC scroll tracking, presentation mode, scroll-reveal
+
+          Report findings by severity (error / warning / info).
+          Be concise — this appears in an approval gate.
+        output: design_review
+
+    approval:
+      required: true
+      prompt: |
+        SITE BUILD + DESIGN REVIEW COMPLETE
+
+        Build report: {{site_build_report}}
+
+        Design review:
+        {{design_review}}
+
+        Review site.html at {{output_dir}}/site.html
+        Approve to build the presentation deck.
+        Deny to stop and revise the site.
+
+        Your feedback (if any) will be passed to the deck builder.
+      timeout: 0
+      default: deny
+
+  # ── Stage 3: Build deck + verify ────────────────────────────────────────────
+  # No gate — this is the final stage.
+  - name: finalize
+    steps:
+      - id: build-deck
+        type: agent
+        agent: education:deck-composer
+        prompt: >
+          Build the standalone HTML presentation deck from the section content.
+
+          Read all sections in {{sections_dir}} in chapter order.
+          Pay special attention to each section's "Presentation Slides" and "Speaker Notes" blocks.
+          Read @education:context/deliverable-specs.md Deliverable 2 specification.
+
+          Produce: {{output_dir}}/deck.html
+
+          The deck must include:
+          - Arrow-key and touch-swipe navigation
+          - Slide counter (current/total) in corner
+          - Speaker notes panel (N key to toggle, hidden from projected view)
+          - Slide overview mode (Escape key — grid of all slide thumbnails)
+          - Full presentation keyboard controls (F for fullscreen, G+number for go-to)
+          - Same Paper Frame design tokens as site.html
+
+          {{_approval_message}}
+
+      - id: verify-deliverables
+        type: agent
+        agent: foundation:explorer
+        prompt: >
+          Verify all deliverables were produced:
+
+          Check that these files exist:
+          - {{output_dir}}/site.html
+          - {{output_dir}}/deck.html
+          - audio/*.txt (one per chapter)
+          - audio/*.mp3 (one per chapter)
+
+          Check that site.html:
+          - Opens and renders (check for major HTML errors)
+          - Has the correct number of chapter sections
+          - Has presentation mode controls
+          - If MP3 files exist: has the AUDIO_FILES map, nav bar audio pill,
+            per-chapter TOC play buttons, and the shared <audio> element
+
+          Check that each .txt script has a corresponding .mp3 file.
+
+          Report any missing deliverables or obvious issues.
+          If everything looks correct, confirm production is complete.

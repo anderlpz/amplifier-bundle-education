@@ -41,6 +41,23 @@ The `full-edition` recipe will pause at the visual art direction gate (Phase 3) 
 
 ---
 
+## Prerequisites
+
+**Required for all deliverables:**
+- Amplifier with the education bundle configured
+
+**Required for audio production (MP3 synthesis):**
+- **OpenAI API key** — set `OPENAI_API_KEY` in your environment (used by the TTS API)
+- **ffmpeg** — required for concatenating multi-chunk audio. Install with:
+  - macOS: `brew install ffmpeg`
+  - Ubuntu/Debian: `sudo apt install ffmpeg`
+  - Fedora: `sudo dnf install ffmpeg`
+- **openai Python package** — `pip install openai` or `uv add openai`
+
+If you don't need MP3 audio, set `produce_audio: false` in the recipe context to skip narration and TTS entirely.
+
+---
+
 ## Installation
 
 Add this bundle to your project's `bundle.md`:
@@ -113,13 +130,39 @@ This is the only phase with an approval gate. Visual direction requires human ju
 - Edit `AESTHETIC-GUIDE.md` to adjust color tokens, typography, or shape vocabulary
 - Hand-edit any SVG in `public/diagrams/` after production
 
-### Phase 4: Deliverable Production (`produce-deliverables.yaml`)
+### Phase 4: Deliverable Production
 
-Three deliverables built from the sections and assets:
+Two variants — choose based on how much control you want:
 
-1. `site.html` — built by `section-author` from all section files
-2. `deck.html` — built by `deck-composer` from presentation slide blocks in sections
-3. `audio/*.txt` — built by `narration-adapter` from section prose (adapted, not verbatim)
+| Recipe | Mode | Use when |
+|--------|------|----------|
+| `produce-deliverables.yaml` | Autonomous | Full-edition pipeline, rebuilds, CI |
+| `produce-deliverables-interactive.yaml` | Interactive | First run, reviewing voice/design, expensive TTS |
+
+**Step order (both variants):**
+
+1. `audio/*.txt` — narration scripts written by `narration-adapter` (adapted for listening, not verbatim)
+2. `audio/*.mp3` — synthesized from scripts via OpenAI TTS (requires `OPENAI_API_KEY` and `ffmpeg`)
+3. `site.html` — built by `section-author` from all section files, with audio player wired to any MP3s found
+4. `deck.html` — built by `deck-composer` from presentation slide blocks in sections
+5. Verification — checks all expected outputs exist and are well-formed
+
+Audio is produced first so the site builder can discover which MP3 files exist and wire the audio player (AUDIO_FILES map, nav pill, per-chapter TOC buttons, scroll sync, auto-advance).
+
+**Interactive mode** pauses at two gates:
+
+- **Gate 1 (after narration scripts, before TTS):** Review scripts in `audio/*.txt` before spending on TTS API calls. The gate shows word counts, estimated duration, and estimated cost. Approve to proceed, deny to revise scripts first.
+- **Gate 2 (after site build, before deck):** A design-intelligence agent reviews `site.html` against the Paper Frame tokens, typography stack, layout constraints, and audio player contract. The gate shows the design review findings. Approve to build the deck (your feedback is passed to the deck builder via `{{_approval_message}}`), deny to revise the site first.
+
+```bash
+# Interactive — pauses for review at two gates
+amplifier recipe execute education:recipes/produce-deliverables-interactive.yaml
+
+# Autonomous — runs straight through (called by full-edition.yaml)
+amplifier recipe execute education:recipes/produce-deliverables.yaml
+```
+
+Set `produce_audio: false` (flat version only) to skip narration and TTS entirely.
 
 All intermediate files are human-editable. Edit a section, rebuild the deliverable.
 
@@ -271,6 +314,7 @@ project/
 │   └── diagrams/                ← generated SVGs
 ├── audio/
 │   ├── ch01-intro.txt           ← voiceover scripts
+│   ├── ch01-intro.mp3           ← synthesized audio (TTS)
 │   └── ...
 ├── site.html                    ← finished reading site
 └── deck.html                    ← finished presentation

@@ -49,15 +49,20 @@ model_role: [writing, reasoning, general]
 ## Reading the Reconciliation
 
 Before writing the content strategy, read:
-- `.design/reconciliation.md` — the Parallax Discovery output with verified claims and their file:line evidence
+- `.design/reconciliation.md` — the Parallax Discovery knowledge base with verified claims
 - Any existing source material provided as context
 - The `context.subject_name` variable passed in the recipe context
+
+**You are designing a curriculum, not summarizing an investigation.** The reconciliation is your source material, not your content. Your job is to transform verified knowledge about a system into a learning experience that teaches someone how that system works.
 
 Look for:
 - The core concepts that need to be taught
 - The counterintuitive or non-obvious architectural decisions (these deserve the most depth)
 - The terms that need first-use explanations
 - The natural teaching sequence (what must be understood before what)
+- The "aha moments" — design decisions that only make sense once you understand the context
+
+**Filter out audit artifacts.** If the reconciliation contains any residual investigation language (discrepancies, gaps, unknowns, missing files), do NOT propagate these into the curriculum. A class about a system teaches how it works. It does not report on what an investigation found. The only exception: if a design trade-off is genuinely important for a student to understand (e.g., "this is intentionally stateless"), frame it as a design decision, not as a finding.
 
 ---
 
@@ -123,6 +128,15 @@ Internal reference table mapping sections to VC-XX claims. This table is for `ed
 ### Part 5: What NOT to Say
 
 A specific blocklist drawn from the source material's context. Anti-patterns, banned phrases, forbidden framings.
+
+**Always include these mandatory bans:**
+- Investigation/audit language: "we found", "the investigation revealed", "static analysis shows", "searching the repository returns"
+- Discrepancy reporting: "there is a gap", "this is inconsistent with", "the documentation claims X but the code shows Y"
+- File:line citations in prose: "at `config.py:47`" — these are internal evidence, not teaching content
+- Forensic framing: "zero matches", "does not exist", "returns no results"
+- Numbered findings: D-XX discrepancy IDs, UNK-XX unknown IDs in any reader-facing content
+
+**The content teaches how the system works. It does not report on what was found in the repo.**
 
 ### Part 6: Multi-Modal Content Guidance
 

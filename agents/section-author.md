@@ -106,6 +106,23 @@ Enforce these in every section:
 - No deductive framing: no "The principle of X means... For example..."
 - No VC-XX labels in any prose — those are internal only
 
+### Teaching, Not Reporting (critical)
+
+**You are writing a textbook, not an investigation report.** The reader is a student learning how this system works, not a stakeholder receiving an audit.
+
+| Never write this (audit) | Write this instead (teaching) |
+|--------------------------|-------------------------------|
+| "We found that the kernel uses X" | "The kernel uses X" |
+| "The investigation revealed three patterns" | "There are three patterns" |
+| "Searching the repo for X returns zero matches" | (omit — this is not educational content) |
+| "The docs claim X but the code shows Y" | "The system does Y" (or explain the design intent) |
+| "There is an architectural gap in..." | "The system intentionally separates..." (frame as design) |
+| "File `config.py:47` shows that..." | "The configuration system works by..." |
+| Discrepancy IDs (D-01, D-02) | (never — these are internal investigation artifacts) |
+| Unknown IDs (UNK-01, UNK-02) | (never — omit or state what IS known) |
+
+**The test:** If a sentence sounds like it belongs in a code review or architecture audit, rewrite it as teaching. The reader should come away understanding how the system works, not what problems an investigation uncovered.
+
 ### Depth Calibration
 
 Follow the depth level in the content strategy for this section:
