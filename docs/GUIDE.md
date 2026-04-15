@@ -24,26 +24,36 @@ All deliverables are generated from section markdown files in `.design/sections/
 Three commands to produce a complete edition:
 
 ```bash
-# 1. Full pipeline (discovery → content → assets → deliverables)
-amplifier recipe execute education:recipes/full-edition.yaml \
-  source_repo=/path/to/your/repo \
-  subject_name="Your Subject Name"
+# Install and activate the bundle
+amplifier bundle add git+https://github.com/your-org/amplifier-bundle-education@main
+amplifier bundle use education
+```
 
-# 2. Update after source changes
-amplifier recipe execute education:recipes/update-edition.yaml \
-  source_repo=/path/to/your/repo
+Then in a session:
 
-# 3. Rebuild deliverables only (if you edited sections manually)
-amplifier recipe execute education:recipes/produce-deliverables.yaml
+```bash
+# 1. Full pipeline (one-shot command)
+amplifier run "execute education:recipes/full-edition.yaml with source_repo=/path/to/your/repo and subject_name='Your Subject Name'"
+
+# 2. Or interactive chat
+amplifier
+> execute the full-edition recipe with source_repo=/path/to/repo and subject_name="Your Subject Name"
+
+# 3. Update after source changes
+> execute education:recipes/update-edition.yaml with source_repo=/path/to/your/repo
+
+# 4. Rebuild deliverables only (if you edited sections manually)
+> execute education:recipes/produce-deliverables.yaml
+
+# 5. Use agents directly
+> Delegate to education:content-strategist to analyze the reconciliation
+> Use the site-builder to rebuild site.html
 ```
 
 The `full-edition` recipe will pause at the visual art direction gate (Phase 3) for your approval. Everything else runs automatically. Discovery defaults to quick (single-pass). For complex repos, use deep discovery:
 
 ```bash
-amplifier recipe execute education:recipes/full-edition.yaml \
-  source_repo=/path/to/complex/repo \
-  subject_name="Complex System" \
-  discovery_depth=deep
+amplifier run "execute education:recipes/full-edition.yaml with source_repo=/path/to/repo and subject_name='Complex System' and discovery_depth=deep"
 ```
 
 ---

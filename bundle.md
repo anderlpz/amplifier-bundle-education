@@ -6,6 +6,7 @@ bundle:
 
 includes:
   - bundle: git+https://github.com/microsoft/amplifier-foundation@main
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-recipes@main
   - bundle: education:behaviors/education
 ---
 

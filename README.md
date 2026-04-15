@@ -23,27 +23,42 @@ The pipeline runs with one command. It pauses for human review at the visual art
 
 ## Quickstart
 
-Add to your `bundle.md`:
+Install the bundle:
+
+```bash
+amplifier bundle add git+https://github.com/your-org/amplifier-bundle-education@main
+amplifier bundle use education
+```
+
+Or add to your project's `bundle.md`:
 
 ```yaml
 includes:
   - bundle: git+https://github.com/your-org/amplifier-bundle-education@main
 ```
 
-Then run:
+Then run in a session:
 
 ```bash
-# Produce a complete edition from scratch (autonomous)
-amplifier recipe execute education:recipes/full-edition.yaml \
-  source_repo=/path/to/your/repo \
-  subject_name="Your Subject Name"
+# Full pipeline (one-shot)
+amplifier run "execute education:recipes/full-edition.yaml with source_repo=/path/to/your/repo and subject_name='Your Subject Name'"
 
-# Same pipeline, but with review gates during deliverable production
-amplifier recipe execute education:recipes/produce-deliverables-interactive.yaml
+# Or interactive chat
+amplifier
+> execute the full-edition recipe with source_repo=/path/to/repo and subject_name="Your Subject Name"
 
-# Update an existing edition after source changes
-amplifier recipe execute education:recipes/update-edition.yaml \
-  source_repo=/path/to/updated/repo
+# Deep discovery for complex repos
+> execute education:recipes/full-edition.yaml with source_repo=/path/to/repo and subject_name="Complex System" and discovery_depth=deep
+
+# Rebuild deliverables only (if you edited sections)
+> execute education:recipes/produce-deliverables.yaml
+
+# Interactive mode with review gates
+> execute education:recipes/produce-deliverables-interactive.yaml
+
+# Use agents directly
+> Delegate to education:content-strategist to analyze the reconciliation
+> Use the site-builder to rebuild site.html
 ```
 
 ---
