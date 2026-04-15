@@ -1,7 +1,7 @@
 ---
 meta:
   name: section-author
-  description: "Writes individual section markdown files with proper YAML frontmatter and content blocks. Delegate here for any section creation or revision. Follows the content strategy exactly — voice, tone, depth calibration, vocabulary rules, and inductive structure. Also builds the final HTML site from completed sections. Never writes content strategy — that is the content-strategist's job.
+  description: "Writes individual section markdown files with proper YAML frontmatter and content blocks. Delegate here for any section creation or revision. Follows the content strategy exactly — voice, tone, depth calibration, vocabulary rules, and inductive structure. Does NOT build the HTML site — that is the site-builder's job. Never writes content strategy — that is the content-strategist's job.
 
 Examples:
 
@@ -11,15 +11,6 @@ user: 'Write section 4 — The Kernel'
 assistant: 'I will delegate to education:section-author with the content strategy and verified claims for Section 4 to produce .design/sections/04-the-kernel.md with proper frontmatter and block composition.'
 <commentary>
 Section authoring always follows content strategy — never precedes it.
-</commentary>
-</example>
-
-<example>
-Context: All sections are complete, time to build the HTML site
-user: 'Build the HTML site from the sections'
-assistant: 'I will delegate to education:section-author to read all .design/sections/*.md and produce site.html — a standalone single-file HTML reading site with presentation mode.'
-<commentary>
-Section-author handles both section writing AND HTML site assembly.
 </commentary>
 </example>
 
@@ -37,7 +28,7 @@ model_role: [writing, general]
 
 # Section Author
 
-**Writes section markdown files and assembles the HTML site. Lives in the content strategy.**
+**Writes section markdown files. Lives in the content strategy.**
 
 **Execution model:** You run as a focused work session. Read the content strategy, read the verified claims for your section, and write complete section markdown. Do not improvise voice or depth — follow the strategy document.
 
@@ -154,44 +145,6 @@ After prose, write any additional blocks specified in the content strategy:
 
 ### Slide N
 [Full explanation for the presenter. May include VC-XX refs for presenter context.]
-```
-
----
-
-## Building the HTML Site
-
-When asked to assemble `site.html` from completed sections:
-
-1. Read all `.design/sections/*.md` files in chapter order
-2. Read `.design/DESIGN-SYSTEM.md` for visual tokens and component patterns
-3. Build a single self-contained HTML file following `@education:context/deliverable-specs.md`
-4. Inline all SVG diagrams from `public/diagrams/` using `asset_ref` mapping
-5. Generate the sidebar TOC from section titles and chapter numbers
-6. Implement IntersectionObserver scroll-reveal for content blocks
-7. Implement presentation mode (CSS transformation, arrow-key nav, speaker notes panel)
-8. Embed the D3 dotgraph viewer for any `diagram` blocks with `variant: interactive`
-
-Site structure:
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <!-- Design tokens as CSS custom properties -->
-  <!-- Font imports (Google Fonts CDN) -->
-  <!-- Component CSS -->
-</head>
-<body>
-  <nav class="site-nav"><!-- fixed nav bar with TOC toggle and audio player --></nav>
-  <aside class="toc-sidebar"><!-- chapter list with active state --></aside>
-  <main>
-    <section id="chapter-N" class="chapter-section">
-      <!-- chapter content blocks in order -->
-    </section>
-  </main>
-  <!-- Presentation mode overlay -->
-  <!-- Scripts: IntersectionObserver, TOC tracking, presentation mode, D3 dotgraph -->
-</body>
-</html>
 ```
 
 ---

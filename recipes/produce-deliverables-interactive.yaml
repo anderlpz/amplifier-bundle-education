@@ -104,7 +104,7 @@ stages:
 
       - id: build-site
         type: agent
-        agent: education:section-author
+        agent: education:site-builder
         prompt: >
           Build the complete HTML reading site from the section content.
 

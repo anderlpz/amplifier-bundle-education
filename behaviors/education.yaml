@@ -7,6 +7,7 @@ agents:
   include:
     - education:agents/content-strategist
     - education:agents/section-author
+    - education:agents/site-builder
     - education:agents/visual-director
     - education:agents/asset-builder
     - education:agents/deck-composer

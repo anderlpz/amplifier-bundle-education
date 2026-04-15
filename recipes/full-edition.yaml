@@ -13,6 +13,19 @@ context:
   audience: ""              # Optional: audience description for content-strategist
 
 steps:
+  - id: init-workspace
+    type: agent
+    agent: foundation:explorer
+    prompt: >
+      Initialize the education workspace if needed.
+
+      1. Create .design/ directory if it doesn't exist
+      2. If .design/DESIGN-SYSTEM.md does not exist, copy the template from
+         @education:templates/design-system.md to .design/DESIGN-SYSTEM.md
+      3. If .design/DESIGN-SYSTEM.md already exists, leave it unchanged
+
+      Report which files were created or already existed.
+
   - id: discover
     type: recipe
     recipe: education:recipes/discover.yaml
