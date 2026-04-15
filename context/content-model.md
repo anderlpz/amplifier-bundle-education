@@ -18,11 +18,13 @@ blocks:                    # Ordered list of content blocks in this section
 source_claims: []          # VC-XX references to verified claims from reconciliation.md
                            # Internal use only — NEVER appear in reader-facing output
 depends_on: []             # Chapter numbers this section builds on
+term_defs: []              # Inline term definitions for tooltip rendering
+                           # Each: { term, layer, definition, section }
 ---
 ```
 
 **Required fields:** `title`, `chapter`, `blocks`
-**Optional fields:** `source_claims`, `depends_on`
+**Optional fields:** `source_claims`, `depends_on`, `term_defs`
 
 ---
 
@@ -48,6 +50,15 @@ A code-drawn SVG diagram. Must have an `asset_ref` pointing to the file in `publ
   asset_ref: FIG-04a
 ```
 
+**Variant: `flow-table`** — Connected flow diagram + table unit (`.flow-table-unit`). Numbered-step flow diagram (IKEA-style circles with arrows) above, corresponding table below, sharing semantic layer colors. Wide breakout on desktop, full-width on mobile.
+
+```yaml
+- type: diagram
+  status: ready
+  variant: flow-table
+  asset_ref: FIG-04b
+```
+
 ### `table`
 A structured comparison or data table. Rendered as a styled HTML table.
 
@@ -63,7 +74,15 @@ A code block. Language specified inline in the markdown fence.
 ```yaml
 - type: code
   status: ready
-  variant: annotated    # optional: annotated adds inline callouts
+```
+
+**Variant: `annotated`** — Annotated code block with numbered callout markers (①②③④). Side-by-side on desktop (code left, annotations right), stacked on mobile. Layer-colored border via `data-layer` attribute.
+
+```yaml
+- type: code
+  status: ready
+  variant: annotated
+  asset_ref: null    # optional: reference to external code file
 ```
 
 ### `comparison`
@@ -81,6 +100,14 @@ Highlighted aside, pull quote, or key fact. Rendered with left accent border.
 ```yaml
 - type: callout
   status: ready
+```
+
+**Variant: `design-decision`** — Design decision callout box with warm coral left border, soft coral background, "DESIGN DECISION" label + flag icon, verdict text, and reasoning paragraph.
+
+```yaml
+- type: callout
+  status: ready
+  variant: design-decision
 ```
 
 ### `audio`
@@ -127,8 +154,10 @@ Short animated motion graphic (30-60 seconds). Video explainer for one concept.
 |---------|-----------|---------|
 | `null` | Any | Default width (reading column, ~650px) |
 | `wide` | diagram, table, comparison, code | Wide breakout (~1100px) |
-| `annotated` | code | Code block with inline callout annotations |
+| `annotated` | code | Code block with numbered callout annotations (①②③④) |
 | `interactive` | diagram | Clickable/pannable (e.g., D3 dotgraph viewer) |
+| `flow-table` | diagram | Connected flow diagram + table unit |
+| `design-decision` | callout | Design decision box (coral border, flag icon, verdict + reasoning) |
 
 ---
 

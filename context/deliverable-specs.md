@@ -17,47 +17,117 @@ A standalone single-file HTML reading site. No build step, no server required �
 
 ### Visual Design
 
-The "Paper Frame" aesthetic — a white reading card on a warm stone canvas:
+The education bundle supports two named design variants. Choose one in `.design/DESIGN-SYSTEM.md` — the build pipeline reads the active variant from that file.
+
+#### Paper Frame (warm editorial)
 
 | Token | Value | Purpose |
 |-------|-------|---------|
-| Canvas background | `#EDEBE6` | Warm stone — the page ground plane |
-| Card background | `#FFFFFF` | White reading surface — each chapter is a card |
-| Primary text | `#1A1815` | Headlines, emphasis (15.2:1 contrast, AAA) |
-| Body text | `#6B6560` | Paragraphs, descriptions (5.8:1, AA) |
-| Muted text | `#9C9590` | Captions, chapter numbers, metadata |
-| Accent | `#0082EB` | Links, interactive elements — the only chromatic color |
-| Code background | `#F5F3EE` | Warm light gray for code blocks |
+| `--bg-canvas` | `#EDEBE6` | Warm stone canvas |
+| `--bg-card` | `#FFFFFF` | White reading surface |
+| `--text-primary` | `#1A1815` | Headlines |
+| `--text-secondary` | `#6B6560` | Body text |
+| `--text-muted` | `#9C9590` | Captions |
+| `--accent` | `#0082EB` | Links, interactive |
+| `--bg-code` | `#F5F3EE` | Code blocks |
 
-Typography stack (from Google Fonts + system):
-- **Lora** (serif) — Chapter titles, section headings (600 weight)
-- **Inter** (sans-serif) — Body text, navigation, UI elements
-- **Space Grotesk** (mono-feeling sans) — Labels, chapter numbers, eyebrows
-- **SF Mono / Fira Code** — Actual code blocks
+Typography: Headings `Lora` (serif) · Body `Inter` (sans) · Labels `Space Grotesk` · Code `SF Mono / Fira Code`
 
-### Layout Structure
+#### Slate Folio (cool technical) — validated in amplifier-masterclass production
+
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `--bg-canvas` | `#F4F5F9` | Cool blue-gray canvas |
+| `--bg-card` | `#FFFFFF` | White reading surface |
+| `--surface-recessed` | `#EDEDF2` | Recessed areas |
+| `--text-primary` | `#1C1E2B` | Headlines |
+| `--text-secondary` | `#5C5E6E` | Body text |
+| `--text-muted` | `#8B8D9C` | Captions |
+| `--accent` | `#3E5C8A` | Slate blue accent |
+| `--accent-hover` | `#2E4A74` | Accent hover |
+| `--accent-soft` | `#E4E9F2` | Accent backgrounds |
+| `--border` | `#D8D9E3` | Standard borders |
+| `--border-light` | `#E8E9EF` | Light borders |
+| `--bg-code` | `#F0F0F5` | Code blocks |
+| `--positive` | `#3D7A4A` | Success states |
+| `--caution` | `#8A6B3E` | Warning states |
+
+Typography: Headings `Inter` (sans) · Body `Source Serif 4` (serif) · Code `JetBrains Mono`
+
+#### Semantic Layer Colors (available in both variants)
+
+Used for architecture/concept diagrams and interactive term definitions:
+
+| Layer | Color | Soft variant |
+|-------|-------|-------------|
+| Kernel | `#9B7B3E` (warm amber) | `#F5F0E4` |
+| Modules | `#3E7D8A` (teal) | `#E4F0F2` |
+| Bundles | `#5C6B9E` (muted indigo) | `#ECEEF5` |
+| Foundation | `#5A7D5A` (sage green) | `#E8F0E8` |
+| Boundary | `#8A5A4A` (warm coral) | `#F2EAE6` |
+| Apps | `#7B6B8A` (muted purple) | `#F0ECF2` |
+| Ecosystem | `#8A7B8A` (dusty mauve) | `#F2EEF2` |
+
+### Layout Structure — 3-Tier Responsive Navigation
+
+#### Desktop (≥1200px)
 
 ```
-Fixed nav bar (52px, z-index 100)
-│  Chapter N · Title           ≡              ▶ Listen
+Permanent sidebar (280px fixed, always visible)
+│  Collapse button (chevron on right edge)
+│  body.sidebar-collapsed hides sidebar, floating pill reappears
 │
-Scrollable content
+│  ┌─ Sidebar ────────────────────────┐
+│  │  Branding / subject title        │
+│  │  Chapter list (TOC)              │
+│  │    ● Ch 1 — Introduction    ▶   │
+│  │    ○ Ch 2 — Architecture        │
+│  │    ○ Ch 3 — The Kernel          │
+│  │  ──────────────────────────────  │
+│  │  Audio controls (docked bottom)  │
+│  │    Speed selector · Voice pills  │
+│  └──────────────────────────────────┘
 │
-  Warm canvas (#EDEBE6)
-  │
-    White card (max-width 1200px, centered, border-radius 8px)
-    │
-      Reading column (max-width 650px, centered in card)
-      │  Chapter eyebrow  [Space Grotesk, 12px, uppercase, muted]
-      │  Chapter title    [Lora 600, fluid 36-48px, primary]
-      │  Lead paragraph   [Inter 400, 18px, secondary]
-      │  Body content     [Inter 400, 16px, leading 1.7]
-      │
-      Wide breakout (max-width 1100px)
-      │  Diagrams, tables, comparison layouts
-      │
-      Full width (rare — hero moments only)
+Body content (padding-left: 280px)
+│  Warm canvas (--bg-canvas)
+│    White card (max-width 1200px, centered, border-radius 8px)
+│      Reading column (max-width 650px, centered in card)
+│      Wide breakout (max-width 1100px)
 ```
+
+#### Tablet (768px–1199px)
+
+```
+Modal flyout sidebar (triggered by floating pill button)
+│  Slide-in from left, 280px wide
+│  Same content as desktop sidebar
+│  Overlay backdrop dims content area
+```
+
+#### Mobile (≤767px)
+
+```
+Full-width bottom bar (not floating pill)
+│  height: calc(44px + env(safe-area-inset-bottom))
+│  Contains: progress ring, chapter number, chapter title (ellipsis), audio play button
+│  2px progress line along top edge
+│
+Bottom sheet (replaces left-sliding drawer)
+│  height: 65vh, slides up from bottom
+│  Drag-to-dismiss (touchstart/touchmove/touchend, 80px threshold)
+│  border-radius: 12px 12px 0 0
+│  Contains:
+│    Branding
+│    Chapter list with play buttons
+│    Audio controls (transport, speed, voice)
+```
+
+#### Scrollspy
+
+IntersectionObserver tracks visible chapter:
+- Updates TOC active state (accent highlight on active entry)
+- Auto-scrolls sidebar to keep active link visible
+- Coordinates with audio (does NOT auto-jump if audio is playing)
 
 ### Interactive Features
 
@@ -67,23 +137,71 @@ Scrollable content
 - **Presentation mode** — floating "Present" button transforms the site into a fullscreen slide deck (arrow-key navigation, speaker notes panel, slide counter)
 - **Audio player** — per-chapter playback wired to MP3 files (see Audio Player Contract below)
 
+### Interactive Components
+
+#### Term Definition Tooltips
+
+Inline `.lt` (layer term) spans for domain vocabulary:
+
+```html
+<span class="lt" data-l="kernel" tabindex="0">kernel</span>
+```
+
+- Underlined in semantic layer color
+- Click or keyboard focus → styled tooltip card:
+  - Colored dot + term name + layer badge
+  - Definition (30–50 words)
+  - "Read more in §N.N" link to relevant section
+- Requires `TERM_DEFS` JavaScript catalog: `term → { layer, definition, section }`
+- Dismiss: click outside, Escape, or re-click
+
+#### Annotated Code Blocks
+
+- Side-by-side on desktop: code left, numbered annotations right
+- Stacked on mobile: code above, annotations below
+- Numbered markers (①②③④) positioned at specific code lines
+- Marker position: measure each source line's rendered bounding rect, center marker vertically
+- Layer-colored border on code container (`data-layer` attribute)
+
+#### Flow-Table Connected Units
+
+- Diagram + table as one visual block (`.flow-table-unit`)
+- Numbered-step flow diagram (IKEA-style circles with arrows) above
+- Corresponding table below, sharing semantic layer colors
+- Wide breakout on desktop, full-width on mobile
+
+#### Design Decision Callout Boxes
+
+- Warm coral left border (`border-left: 3px solid var(--layer-boundary)`)
+- Soft coral background (`var(--layer-boundary-soft)`)
+- 4px border-radius
+- "DESIGN DECISION" label + flag icon + verdict text + reasoning paragraph
+
 ### Audio Player Contract
 
 The audio player is conditional: it is built only when MP3 files exist in `audio/`. When no MP3s are present, the site omits all audio UI elements entirely.
 
-**AUDIO_FILES map:**
+**AUDIO_FILES + VOICE_AUDIO_FILES maps:**
 
-The site builder scans `audio/*.mp3` at build time and generates a JavaScript map:
+The site builder scans `audio/` at build time and generates JavaScript maps:
 
 ```javascript
 const AUDIO_FILES = {
   "ch01-introduction": "audio/ch01-introduction.mp3",
   "ch02-architecture-map": "audio/ch02-architecture-map.mp3",
-  // ... one entry per MP3 file found
+  // ... one entry per MP3 file found in audio/ root (primary voice)
 };
+
+const VOICE_AUDIO_FILES = {
+  fable: { 's1': 'audio/fable/ch01-introduction.mp3', ... },
+  nova:  { 's1': 'audio/nova/ch01-introduction.mp3', ... },
+  alloy: { 's1': 'audio/alloy/ch01-introduction.mp3', ... }
+};
+
+let activeVoice = 'fable';
 ```
 
-Keys are section IDs (matching the chapter `<section id="...">` in the HTML). Values are relative paths to the MP3 files.
+Keys in AUDIO_FILES are section IDs (matching the chapter `<section id="...">` in the HTML). Values are relative paths to the MP3 files. VOICE_AUDIO_FILES maps each voice to the same section-ID keyed structure.
 
 **Required controls:**
 
@@ -91,6 +209,10 @@ Keys are section IDs (matching the chapter `<section id="...">` in the HTML). Va
 |---------|----------|----------|
 | Nav pill button | Fixed nav bar (right side) | Single play/pause toggle for current chapter. Shows ▶ when paused, ❚❚ when playing. |
 | Per-chapter TOC buttons | Sidebar TOC, next to each chapter entry | Small play/pause icon. Clicking starts that chapter's audio (pauses any other). |
+| Voice selector | Sidebar audio controls section | Pills or menu. Show only voices that have files. Switching voice preserves currentTime and playback state. Hide if only 1 voice detected. |
+| Speed selector | Sidebar audio controls section | Cycle button: 0.75×, 1×, 1.25×, 1.5×, 2×. Persists across chapter changes. Sets `playbackRate` on the audio element. |
+| Transport controls | Sidebar audio controls section | Back 15s, forward 15s, scrubber bar (3px track, accent fill, draggable thumb, mm:ss display). |
+| Audio discoverability | Under each chapter title | Prominent "Listen to this chapter" affordance. |
 
 **Required behaviors:**
 
@@ -100,6 +222,8 @@ Keys are section IDs (matching the chapter `<section id="...">` in the HTML). Va
 | Auto-advance | When a chapter's audio finishes (`ended` event), load and play the next chapter's audio if it exists in AUDIO_FILES. |
 | Keyboard toggle | `P` key toggles play/pause for the current chapter. |
 | Single `<audio>` element | One shared `<audio>` element in the DOM. Swap its `src` when chapters change. Avoids multiple simultaneous streams. |
+| Voice switch preserves state | When switching voices, preserve currentTime and playbackRate. Swap src to the new voice's file, seek to the saved time, and resume if was playing. |
+| Dynamic voice detection | Populate voice selector from voices that actually have files. Hide selector entirely if only 1 voice. |
 
 **CSS states:**
 
@@ -163,7 +287,7 @@ Notes include:
 
 ### Visual Style
 
-Same design tokens as the HTML site. Fullscreen slides use:
+Same design tokens as the HTML site (per DESIGN-SYSTEM.md variant). Fullscreen slides use:
 - Dark canvas or white card depending on slide type
 - Large typography — headlines 48-72px
 - Diagrams displayed at full slide width
@@ -173,31 +297,43 @@ Same design tokens as the HTML site. Fullscreen slides use:
 
 ## Deliverable 3: Audio Narration (audio/)
 
-Per-chapter voiceover scripts and MP3 audio files.
+Per-chapter voiceover scripts and MP3 audio files, synthesized across multiple voices.
 
 ### File Convention
 
 ```
 audio/
-├── ch01-introduction.txt      ← voiceover script (plain text)
-├── ch01-introduction.mp3      ← rendered audio
-├── ch02-architecture-map.txt
+├── ch01-introduction.mp3       ← primary voice (default)
+├── ch01-introduction.txt       ← narration script (clean prose)
 ├── ch02-architecture-map.mp3
-└── ...
+├── ch02-architecture-map.txt
+├── fable/
+│   ├── ch01-introduction.mp3
+│   ├── ch02-architecture-map.mp3
+│   └── ...
+├── nova/
+│   ├── ch01-introduction.mp3
+│   ├── ch02-architecture-map.mp3
+│   └── ...
+└── alloy/
+    ├── ch01-introduction.mp3
+    ├── ch02-architecture-map.mp3
+    └── ...
 ```
+
+The root `audio/*.mp3` files are copies of the primary (first) voice. Voice subdirectories contain the per-voice renders.
 
 ### Script Format
 
-Voiceover scripts are **not** a reading of the site's prose. They are adapted for listening:
+Voiceover scripts are **clean prose** — no production markers, no `[pause]`, no `[CHAPTER START]` / `[CHAPTER END]`. They are NOT a reading of the site's prose. They are dense summaries adapted for listening: compressed "key points" versions (8–20 lines of tight prose per chapter).
 
 **Key adaptations:**
 1. Replace "as shown in the diagram below" with a verbal description of what the diagram shows
 2. Read code examples only if short (1-3 lines); for longer blocks, describe what the code does
 3. Add verbal signposts where prose uses visual breaks: "Now let's look at..." or "The next piece is..."
 4. Simplify tables into verbal lists: "There are six module types. The first is the Orchestrator, which drives the conversation..."
-5. Add pause markers `[pause]` where the listener needs a beat to absorb something
-6. Shorter sentences than prose — audio requires it
-7. More direct address — "You" and "we" are appropriate
+5. Shorter sentences than prose — audio requires it
+6. More direct address — "You" and "we" are appropriate
 
 **Voice:** Same "best professor" voice as the prose — patient, knowledgeable, clear. Slightly warmer because audio is intimate. Never casual ("hey guys"), never breathless.
 
@@ -208,43 +344,25 @@ Voiceover scripts are **not** a reading of the site's prose. They are adapted fo
 - Each chapter: 3-8 minutes depending on depth level
 - Deep chapters (Tools vs Hooks, The Kernel): up to 10 minutes
 
-### Podcast Concatenation
-
-Scripts include markers for podcast-style concatenation:
-
-```
-[CHAPTER START: Chapter 4 — The Kernel]
-[INTRO MUSIC: 3 seconds]
-
-[BODY]
-... voiceover text ...
-[pause]
-... more text ...
-
-[OUTRO: "This was Chapter 4. Next: The Module System."]
-[OUTRO MUSIC: 3 seconds]
-[CHAPTER END]
-```
-
-The edition manager tracks which MP3s exist vs. which scripts need audio rendering.
-
 ### TTS Synthesis
 
 MP3 files are synthesized from the .txt scripts via the `synthesize-audio` recipe:
 
 **Process:**
-1. Strip production markers ([CHAPTER START], [CHAPTER END], [INTRO MUSIC], [OUTRO MUSIC], [BODY], [SECTION])
-2. Replace `[pause]` with `...` (produces a natural pause in TTS)
-3. Replace `[OUTRO: "text"]` with just the quoted text
-4. Chunk cleaned text at paragraph/sentence boundaries (max 4096 characters per API call)
-5. Call OpenAI TTS API for each chunk
+1. Read clean prose script (no marker stripping needed — scripts are already clean)
+2. Trim whitespace, collapse blank lines
+3. Chunk cleaned text at paragraph/sentence boundaries (max 4096 characters per API call)
+4. For each voice in the voices list, call OpenAI TTS API with OPUS intermediate format
+5. Convert OPUS to VBR MP3 via `ffmpeg -i chunk.opus -q:a 2 chunk.mp3`
 6. Concatenate multi-chunk outputs with ffmpeg (`-f concat -c copy`, no re-encoding)
+7. Copy primary voice files to audio/ root as defaults
 
-**Incremental:** Scripts whose .mp3 already has a newer mtime than the .txt are skipped.
+**Incremental:** Scripts whose .mp3 already has a newer mtime than the .txt are skipped (per voice).
 
 **Configuration defaults:**
 - Model: `tts-1-hd` (high quality)
-- Voice: `onyx` (deep, authoritative — good for technical education)
+- Voices: `["fable", "nova", "alloy"]` (multiple voices, first is primary)
+- Speed: `0.95` (slightly slower for comprehension)
 - Provider: OpenAI (extensible to ElevenLabs in future)
 
 **Dependencies:** `openai` Python package, `ffmpeg` system binary.

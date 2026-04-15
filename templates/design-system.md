@@ -1,8 +1,8 @@
 # Design System: [Subject Name]
 
 <!-- INSTRUCTIONS: This template defines the visual identity for your education product.
-     Fill in the values for your project — or leave the defaults (Paper Frame v3.0)
-     if you want to use the reference implementation aesthetic.
+     Two named variants are provided: Slate Folio (production-validated default) and
+     Paper Frame (warm editorial alternate). Choose one, or define your own.
 
      The content-strategist and visual-director agents will read this document.
      The asset-builder uses the tokens defined here for all SVG production.
@@ -10,8 +10,9 @@
 
 | | |
 |---|---|
-| **Version** | 1.0 |
+| **Version** | 2.0 |
 | **Date** | [Date] |
+| **Variant** | Slate Folio |
 | **Applies to** | Education product — site, deck, diagrams |
 
 This document is the single source of truth for every visual decision. It defines colors, typography, spacing, components, and layout. Companion file `tokens.css` implements these values as CSS custom properties.
@@ -21,11 +22,11 @@ This document is the single source of truth for every visual decision. It define
 ## 1. Aesthetic Identity
 
 <!-- Describe the overall visual identity in one paragraph.
-     Reference implementations to consider:
-     - Paper Frame (editorial, typographic, warm paper aesthetic)
-     - Dark technical (dark backgrounds, bright accents, monospace-forward)
-     - Magazine/editorial (rich imagery, generous whitespace, serif-heavy)
-     - Dashboard/product (clean UI, functional, sans-serif dominant) -->
+     Two reference variants are provided below. Use one as-is, blend them, or define your own.
+
+     Slate Folio — Cool, technical, reading-forward. Production-validated in amplifier-masterclass.
+     Paper Frame — Warm, editorial, typographic. The original bundle default.
+     Custom     — Define your own palette and typography below. -->
 
 [Aesthetic description — what does this look and feel like? What is the reading experience?]
 
@@ -39,19 +40,66 @@ This document is the single source of truth for every visual decision. It define
 
 **Guiding principle:** [Your color philosophy in one sentence]
 
-### 2.1 Backgrounds
+<!-- Choose a variant below or define custom values. The active variant's tokens are what
+     the site builder reads. Comment out the inactive variant or delete it. -->
+
+### Variant: Slate Folio (default — production-validated)
+
+#### 2.1 Backgrounds
 
 | Token | Value | Purpose |
 |-------|-------|---------|
-| `--bg-canvas` | `#EDEBE6` | Page background — warm stone (Paper Frame default) |
-| `--bg-card` | `#FFFFFF` | Reading surface — white card on canvas |
-| `--bg-code` | `#F5F3EE` | Code block backgrounds — warm light gray |
-| `--bg-muted` | `#F7F5F0` | Callouts, blockquotes — subtle background |
+| `--bg-canvas` | `#F4F5F9` | Cool blue-gray canvas |
+| `--bg-card` | `#FFFFFF` | White reading surface |
+| `--surface-recessed` | `#EDEDF2` | Recessed areas (sidebar, code) |
+| `--bg-code` | `#F0F0F5` | Code block backgrounds |
+| `--bg-muted` | `#EDEDF2` | Callouts, blockquotes |
 
-<!-- Adjust these values for your aesthetic. The defaults are the Paper Frame palette.
-     For a dark aesthetic, swap canvas to ~#1A1A1A and card to ~#242424 -->
+#### 2.2 Text Colors
 
-### 2.2 Text Colors
+| Token | Value | Contrast | Purpose |
+|-------|-------|----------|---------|
+| `--text-primary` | `#1C1E2B` | 14.8:1 (AAA) | Headlines, emphasis |
+| `--text-secondary` | `#5C5E6E` | 6.1:1 (AA) | Body text |
+| `--text-muted` | `#8B8D9C` | 3.4:1 (AA large) | Captions, metadata |
+
+#### 2.3 Accent
+
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `--accent` | `#3E5C8A` | Slate blue — links, interactive elements |
+| `--accent-hover` | `#2E4A74` | Hover/active state |
+| `--accent-soft` | `#E4E9F2` | Accent backgrounds |
+
+#### 2.4 Borders
+
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `--border` | `#D8D9E3` | Standard borders |
+| `--border-light` | `#E8E9EF` | Light borders |
+
+#### 2.5 Status Colors
+
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `--positive` | `#3D7A4A` | Success states |
+| `--caution` | `#8A6B3E` | Warning states |
+
+### Variant: Paper Frame (alternate — warm editorial)
+
+<!-- Uncomment and set **Variant** to "Paper Frame" in the header table to use this instead. -->
+
+<!--
+#### 2.1 Backgrounds
+
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `--bg-canvas` | `#EDEBE6` | Warm stone canvas |
+| `--bg-card` | `#FFFFFF` | White reading surface |
+| `--bg-code` | `#F5F3EE` | Warm light gray for code blocks |
+| `--bg-muted` | `#F7F5F0` | Callouts, blockquotes |
+
+#### 2.2 Text Colors
 
 | Token | Value | Contrast | Purpose |
 |-------|-------|----------|---------|
@@ -59,7 +107,7 @@ This document is the single source of truth for every visual decision. It define
 | `--text-secondary` | `#6B6560` | 5.8:1 (AA) | Body text |
 | `--text-muted` | `#9C9590` | 3.2:1 (AA large) | Captions, metadata |
 
-### 2.3 Accent
+#### 2.3 Accent
 
 | Token | Value | Purpose |
 |-------|-------|---------|
@@ -67,17 +115,25 @@ This document is the single source of truth for every visual decision. It define
 | `--accent-hover` | `#006BC4` | Hover/active state |
 | `--accent-deep` | `#005AA0` | Accent text on light backgrounds |
 | `--accent-bg` | `rgba(0, 130, 235, 0.08)` | Subtle accent background |
+-->
 
-### 2.4 Semantic Colors (Subject-Specific)
+### 2.6 Semantic Layer Colors (both variants)
 
-<!-- Add semantic color tokens for concept-level color coding in diagrams.
-     The amplifier-masterclass used: amber=kernel, teal=modules, indigo=bundles, etc.
-     Define your own based on your subject's conceptual layers. -->
+Used for architecture/concept diagrams and term definition tooltips. Map your subject's conceptual layers to these colors:
 
-| Token | Value | Concept |
-|-------|-------|---------|
-| `--color-[concept-a]` | `#hex` | [What this color represents] |
-| `--color-[concept-b]` | `#hex` | [What this color represents] |
+| Layer | Token | Color | Soft variant | Concept |
+|-------|-------|-------|-------------|---------|
+| Kernel | `--layer-kernel` | `#9B7B3E` (warm amber) | `#F5F0E4` | [Core runtime / central concept] |
+| Modules | `--layer-modules` | `#3E7D8A` (teal) | `#E4F0F2` | [Module system / composable units] |
+| Bundles | `--layer-bundles` | `#5C6B9E` (muted indigo) | `#ECEEF5` | [Distribution / packaging] |
+| Foundation | `--layer-foundation` | `#5A7D5A` (sage green) | `#E8F0E8` | [Base infrastructure / primitives] |
+| Boundary | `--layer-boundary` | `#8A5A4A` (warm coral) | `#F2EAE6` | [Interfaces / contracts / edges] |
+| Apps | `--layer-apps` | `#7B6B8A` (muted purple) | `#F0ECF2` | [Application layer / user-facing] |
+| Ecosystem | `--layer-ecosystem` | `#8A7B8A` (dusty mauve) | `#F2EEF2` | [External / community / broader context] |
+
+<!-- Rename layers to match your subject's conceptual hierarchy.
+     The amplifier-masterclass used these exact names. For a different subject,
+     you might have: "Core", "API", "Plugins", "Config", "Security", "UI", "Community" -->
 
 ---
 
@@ -87,16 +143,23 @@ This document is the single source of truth for every visual decision. It define
 
 ### 3.1 Font Stacks
 
+<!-- Slate Folio typography (default): -->
+
 | Token | Value | Role |
 |-------|-------|------|
-| `--font-serif` | `'Lora', Georgia, serif` | Reading voice — headlines, chapter titles |
-| `--font-sans` | `'Inter', system-ui, sans-serif` | Working voice — body text, UI |
-| `--font-mono` | `'Space Grotesk', monospace` | Precision voice — labels, eyebrows |
-| `--font-code` | `'SF Mono', 'Fira Code', monospace` | Code blocks |
+| `--font-heading` | `'Inter', system-ui, sans-serif` | Headlines, chapter titles |
+| `--font-body` | `'Source Serif 4', Georgia, serif` | Reading voice — body text |
+| `--font-mono` | `'JetBrains Mono', 'SF Mono', monospace` | Code blocks, inline code |
+| `--font-label` | `'Inter', system-ui, sans-serif` | Labels, eyebrows, nav |
 
-<!-- These are the Paper Frame defaults. For a more technical aesthetic,
-     consider JetBrains Mono + IBM Plex Sans. For a more academic look,
-     consider Source Serif 4 + Source Sans 3. -->
+<!-- Paper Frame typography (alternate):
+| Token | Value | Role |
+|-------|-------|------|
+| `--font-heading` | `'Lora', Georgia, serif` | Reading voice — headlines, chapter titles |
+| `--font-body` | `'Inter', system-ui, sans-serif` | Working voice — body text, UI |
+| `--font-mono` | `'SF Mono', 'Fira Code', monospace` | Code blocks |
+| `--font-label` | `'Space Grotesk', monospace` | Precision voice — labels, eyebrows |
+-->
 
 ### 3.2 Type Scale
 
@@ -155,10 +218,10 @@ canvas (--bg-canvas)
 ### Breakpoints
 
 | Name | Max width | Changes |
-|------|-----------|---------|
-| Desktop | None | Default layout |
-| Tablet | `1024px` | Card padding tightens |
-| Mobile | `768px` | Card goes full-width, canvas disappears |
+|------|-----------|---------
+| Desktop | ≥1200px | Permanent sidebar (280px fixed) |
+| Tablet | 768px–1199px | Modal flyout sidebar |
+| Mobile | ≤767px | Full-width bottom bar + bottom sheet |
 | Small mobile | `480px` | Further padding reduction |
 
 ---
@@ -184,14 +247,33 @@ border-radius: 0 4px 4px 0
 font-style: italic
 ```
 
+### Design Decision Callout
+
+```
+background: var(--layer-boundary-soft)   /* #F2EAE6 */
+border-left: 3px solid var(--layer-boundary)   /* #8A5A4A */
+border-radius: 4px
+padding: --space-6 --space-8
+Label: "DESIGN DECISION" + flag icon
+```
+
 ### Code Block
 
 ```
 background: --bg-code
-border: 1px solid rgba(0,0,0,0.08)
+border: 1px solid var(--border-light)
 border-radius: 8px
 padding: --space-6
-font: --font-code, --text-sm
+font: --font-mono, --text-sm
+```
+
+### Annotated Code Block
+
+```
+Side-by-side on desktop (code left, annotations right)
+Stacked on mobile (code above, annotations below)
+Numbered markers: ①②③④ positioned at specific lines
+Layer-colored border via data-layer attribute
 ```
 
 ---
@@ -203,18 +285,18 @@ font: --font-code, --text-sm
 All diagrams use the same background as the canvas with white card nodes:
 
 ```
-SVG background:  --bg-canvas (#EDEBE6)
+SVG background:  --bg-canvas
 Node fill:       --bg-card (#FFFFFF)
-Node border:     rgba(0,0,0,0.15)
-Label:           Inter 400, 13px, --text-primary
-Caption:         Inter 400, 11px, --text-muted
-Title:           Lora 600, 16px, --text-primary
-Mono/code:       SF Mono, 11px, --text-primary
+Node border:     var(--border) or rgba(0,0,0,0.15)
+Label:           --font-body, 13px, --text-primary
+Caption:         --font-body, 11px, --text-muted
+Title:           --font-heading, 600, 16px, --text-primary
+Mono/code:       --font-mono, 11px, --text-primary
 ```
 
 ### Semantic Color Coding
 
-Use the subject-specific semantic tokens from Section 2.4 to color-code conceptual layers in diagrams.
+Use the semantic layer tokens from Section 2.6 to color-code conceptual layers in diagrams. Both solid and soft variants are available for fills vs. backgrounds.
 
 ---
 
@@ -238,14 +320,15 @@ Use the subject-specific semantic tokens from Section 2.4 to color-code conceptu
 | Use one accent color for all interactive elements | Introduce a second accent hue |
 | Use `--text-secondary` for body text | Use `--text-muted` for body text |
 | Let whitespace handle most separation | Add borders everywhere |
+| Use semantic layer colors for concept coding | Use random colors in diagrams |
 
 ### Typography
 
 | Do | Don't |
 |----|-------|
-| Use serif for chapter titles | Use serif for body text |
+| Use heading font for chapter titles | Mix heading fonts |
 | Use generous line-height (1.7) | Compress line-height below 1.5 |
-| Use monospace for labels and code references | Use monospace for body text |
+| Use monospace for code and labels | Use monospace for body text |
 
 ### Motion
 

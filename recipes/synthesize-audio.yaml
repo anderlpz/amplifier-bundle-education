@@ -1,7 +1,8 @@
 name: synthesize-audio
 description: >
   Convert narration scripts (audio/*.txt) to MP3 audio files via TTS.
-  Strips production markers, chunks text to respect API limits,
+  Synthesizes multiple voices in parallel, uses OPUS intermediate format
+  with ffmpeg VBR MP3 conversion, chunks text to respect API limits,
   concatenates multi-chunk outputs, and skips chapters whose MP3
   is already newer than the source script.
 
@@ -9,8 +10,9 @@ context:
   audio_dir: "audio"                # Directory containing .txt scripts and .mp3 output
   tts_provider: "openai"            # "openai" (default); extensible to "elevenlabs" later
   tts_model: "tts-1-hd"            # OpenAI model: "tts-1" (fast) or "tts-1-hd" (quality)
-  tts_voice: "onyx"                # Voice: onyx (deep, authoritative), alloy, echo, fable, nova, shimmer
-  chunk_limit: 4096                 # Max characters per TTS API call
+  tts_voices: '["fable", "nova", "alloy"]'   # List of voices to synthesize
+  tts_speed: 0.95                    # Slightly slower for comprehension
+  chunk_limit: 4096                  # Max characters per TTS API call
 
 steps:
   - id: synthesize
@@ -23,27 +25,26 @@ steps:
       then execute it with `python synthesize_audio.py`.
 
       **Inputs:** All .txt files in {{audio_dir}}/
-      **Outputs:** One .mp3 per .txt in {{audio_dir}}/
+      **Outputs:** Per-voice MP3s in {{audio_dir}}/{voice}/ subdirectories,
+      plus primary voice copies in {{audio_dir}}/ root.
 
       **Configuration:**
       - TTS provider: {{tts_provider}}
       - Model: {{tts_model}}
-      - Voice: {{tts_voice}}
+      - Voices: {{tts_voices}} (JSON list — iterate over each voice)
+      - Speed: {{tts_speed}} (passed as the `speed` parameter to the API)
       - Chunk character limit: {{chunk_limit}}
 
       **Step 1 — Discover scripts:**
-      Glob {{audio_dir}}/*.txt. For each .txt, check if a matching .mp3 exists
-      with a modification time newer than the .txt. If so, skip it (incremental).
-      Print which files are skipped and which will be synthesized.
+      Glob {{audio_dir}}/*.txt. For each .txt, and for each voice, check if
+      a matching .mp3 exists in {{audio_dir}}/{voice}/ with a modification
+      time newer than the .txt. If so, skip that voice/chapter pair (incremental).
+      Print which files are skipped and which will be synthesized per voice.
 
       **Step 2 — Clean script text:**
-      For each .txt that needs synthesis, read the file and strip production markers:
-      - Remove lines matching: [CHAPTER START: ...], [CHAPTER END],
-        [INTRO MUSIC: ...], [OUTRO MUSIC: ...], [BODY], [SECTION: ...]
-      - Replace [pause] with "..." (three dots — produces a natural pause in TTS)
-      - Replace [OUTRO: "..."] with just the quoted text inside
-      - Strip any remaining [...] markers
-      The result is clean prose ready for TTS.
+      Scripts are clean prose (no production markers). The only cleaning
+      needed is trimming leading/trailing whitespace from lines and
+      collapsing multiple blank lines into one.
 
       **Step 3 — Chunk text:**
       Split the cleaned text into chunks of at most {{chunk_limit}} characters.
@@ -51,25 +52,39 @@ steps:
       exceeds the limit, split at sentence boundaries (period + space).
       Never split mid-sentence.
 
-      **Step 4 — Call TTS API:**
-      For each chunk, call the OpenAI TTS API:
+      **Step 4 — Call TTS API (per voice):**
+      For each voice in the voices list, and for each chunk, call the OpenAI
+      TTS API using OPUS intermediate format:
 
+        import json, subprocess
         from openai import OpenAI
-        client = OpenAI()  # uses OPENAI_API_KEY from environment
-        response = client.audio.speech.create(
-            model="{{tts_model}}",
-            voice="{{tts_voice}}",
-            input=chunk_text,
-            response_format="mp3"
-        )
-        response.stream_to_file(chunk_path)
 
-      Save each chunk as a temporary file: {{audio_dir}}/.chunks/{base}_part{NN}.mp3
+        voices = json.loads('{{tts_voices}}')
+        client = OpenAI()  # uses OPENAI_API_KEY from environment
+
+        for voice in voices:
+            response = client.audio.speech.create(
+                model="{{tts_model}}",
+                voice=voice,
+                input=chunk_text,
+                speed={{tts_speed}},
+                response_format="opus"
+            )
+            response.stream_to_file(chunk_opus_path)
+
+            # Convert OPUS to VBR MP3 via ffmpeg
+            subprocess.run([
+                "ffmpeg", "-y", "-i", chunk_opus_path,
+                "-q:a", "2", chunk_mp3_path
+            ], check=True)
+
+      Save each chunk as a temporary file:
+      {{audio_dir}}/.chunks/{voice}/{base}_part{NN}.mp3
 
       **Step 5 — Concatenate chunks:**
-      If a script produced multiple chunks, concatenate them with ffmpeg:
+      If a script produced multiple chunks for a voice, concatenate them
+      with ffmpeg:
 
-        # Write a file list for ffmpeg concat
         with open(list_path, "w") as f:
             for part in sorted(part_files):
                 f.write(f"file '{part}'\n")
@@ -80,17 +95,24 @@ steps:
         ], check=True)
 
       If only one chunk, just move it to the final path.
-      Clean up the .chunks/ temp directory after concatenation.
+      Output goes to {{audio_dir}}/{voice}/{chNN-slug}.mp3
 
-      **Step 6 — Report:**
-      Print a summary: how many scripts synthesized, how many skipped,
-      total MP3 files in {{audio_dir}}/.
+      **Step 6 — Copy primary voice to root:**
+      The first voice in the list is the primary/default voice.
+      Copy all of the primary voice's MP3 files from {{audio_dir}}/{first_voice}/
+      to {{audio_dir}}/ root so the default audio player path works without
+      voice subdirectory prefixes.
+
+      **Step 7 — Report:**
+      Print a summary: how many scripts synthesized per voice, how many skipped,
+      total MP3 files in {{audio_dir}}/ and each voice subdirectory.
+      Clean up the .chunks/ temp directory after all synthesis is complete.
 
       **Error handling:**
       - If OPENAI_API_KEY is not set, exit with a clear error message.
       - If ffmpeg is not installed, exit with: "ffmpeg is required for
-        multi-chunk audio concatenation. Install with: brew install ffmpeg
-        (macOS) or apt install ffmpeg (Linux)."
+        OPUS-to-MP3 conversion and multi-chunk audio concatenation.
+        Install with: brew install ffmpeg (macOS) or apt install ffmpeg (Linux)."
       - If a TTS call fails, log the error and continue with remaining scripts.
         Report failures at the end.
 

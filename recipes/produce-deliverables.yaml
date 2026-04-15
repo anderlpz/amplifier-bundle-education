@@ -18,7 +18,8 @@ context:
   subject_name: ""                   # For HTML title and meta tags
   produce_audio: true                # Whether to produce narration scripts + MP3s
   tts_model: "tts-1-hd"             # OpenAI TTS model
-  tts_voice: "onyx"                 # TTS voice (deep, authoritative)
+  tts_voices: '["fable", "nova", "alloy"]'   # TTS voices to synthesize
+  tts_speed: 0.95                    # Slightly slower for comprehension
 
 steps:
   - id: build-narration
@@ -44,8 +45,8 @@ steps:
           The script must:
           - Be adapted for listening (not a verbatim reading)
           - Replace visual references with verbal descriptions
-          - Use pause markers [pause] appropriately
-          - Include chapter start/end markers and music cue markers
+          - Use natural paragraph breaks for pacing (no [pause] markers)
+          - Be clean prose with no production markers of any kind
           - Be approximately {{item.target_minutes}} minutes when spoken at normal pace
 
   - id: synthesize-audio
@@ -58,7 +59,8 @@ steps:
       context:
         audio_dir: "audio"
         tts_model: "{{tts_model}}"
-        tts_voice: "{{tts_voice}}"
+        tts_voices: "{{tts_voices}}"
+        tts_speed: "{{tts_speed}}"
 
   - id: build-site
     type: agent
@@ -86,38 +88,39 @@ steps:
 
       **Audio player (required if MP3 files exist in audio/):**
       Check the audio/ directory for .mp3 files. If MP3 files are present, build the
-      chapter audio player into the site:
+      chapter audio player into the site per the Audio Player Contract in
+      @education:context/deliverable-specs.md:
 
-      1. Build an AUDIO_FILES map from the actual files present, mapping section IDs
-         to MP3 paths. Example:
+      1. Build AUDIO_FILES (primary/default voice) and VOICE_AUDIO_FILES (per-voice)
+         maps from the actual files present. Example:
            const AUDIO_FILES = {
              "ch01-introduction": "audio/ch01-introduction.mp3",
-             "ch02-architecture": "audio/ch02-architecture.mp3",
              ...
            };
+           const VOICE_AUDIO_FILES = {
+             fable: { "ch01-introduction": "audio/fable/ch01-introduction.mp3", ... },
+             nova:  { "ch01-introduction": "audio/nova/ch01-introduction.mp3", ... },
+             alloy: { "ch01-introduction": "audio/alloy/ch01-introduction.mp3", ... }
+           };
+           let activeVoice = 'fable';
 
-      2. Nav bar play/pause pill button — a single button in the fixed nav bar that
-         toggles playback for the current chapter. Shows a play icon (▶) when paused,
-         pause icon (❚❚) when playing. Clicking toggles the <audio> element.
+      2. Voice selector — pills or menu in sidebar audio controls. Show only voices
+         that have files. Switching voice preserves currentTime and playback state.
 
-      3. Per-chapter play buttons in the sidebar TOC — each chapter entry in the TOC
-         gets a small play/pause button. Clicking starts playback for that chapter
-         (pausing any other chapter that was playing).
+      3. Speed selector — cycle button (0.75×, 1×, 1.25×, 1.5×, 2×). Persists
+         across chapter changes via playbackRate on the audio element.
 
-      4. Scroll-to-audio sync — when the user scrolls to a new chapter, update the
-         active audio source to match. Do NOT auto-play on scroll; just update
-         which chapter the nav pill button controls.
+      4. Transport controls — back 15s, forward 15s, scrubber bar (3px track,
+         accent fill, draggable thumb, mm:ss display).
 
-      5. Auto-advance — when a chapter's audio finishes, automatically load and play
-         the next chapter's audio (if it exists in AUDIO_FILES).
+      5. Audio discoverability — prominent "Listen to this chapter" affordance
+         under each chapter title.
 
-      6. CSS states — add a .playing class to the active chapter's TOC entry and
-         section element. Swap the nav pill icon between play/pause states.
+      6. Nav bar play/pause pill, per-chapter TOC buttons, scroll-to-audio sync,
+         auto-advance, P keyboard shortcut, single shared <audio> element.
 
-      7. Keyboard shortcut — P key toggles play/pause for the current chapter.
-
-      8. Single <audio> element — use one shared <audio> element, swapping its src
-         when chapters change. This avoids multiple simultaneous audio streams.
+      7. Dynamic voice detection — populate voice selector from voices that have
+         files, hide selector if only 1 voice.
 
       If no MP3 files exist in audio/, omit the audio player entirely (the nav bar
       should not show audio controls). The site must work correctly with or without
@@ -141,7 +144,7 @@ steps:
       - Speaker notes panel (N key to toggle, hidden from projected view)
       - Slide overview mode (Escape key — grid of all slide thumbnails)
       - Full presentation keyboard controls (F for fullscreen, G+number for go-to)
-      - Same Paper Frame design tokens as site.html
+      - Same design tokens as site.html (per DESIGN-SYSTEM.md variant)
 
   - id: verify-deliverables
     type: agent

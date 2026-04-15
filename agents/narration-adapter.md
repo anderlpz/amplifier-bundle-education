@@ -73,49 +73,37 @@ Rules:
 
 ## Script Format
 
-Each script file is plain text with markup markers for audio production:
+Each script file is **clean prose** — no production markers, no `[pause]`, no `[CHAPTER START]` / `[CHAPTER END]`, no `[BODY]`, no `[SECTION]`, no music cues. The masterclass production run validated that clean prose works better for TTS: markers were stripped before synthesis anyway, and they complicated scripts without adding value.
+
+**Format:** Plain text. Dense prose paragraphs. Natural paragraph breaks provide pacing.
 
 ```
-[CHAPTER START: Chapter N — Section Title]
-[INTRO MUSIC: 3 seconds]
+Every application built on Amplifier starts with a single function call.
+The kernel loads a YAML manifest, resolves each module reference to a
+filesystem path, and calls mount. That's the entire startup sequence.
 
-[BODY]
-[SECTION: Opening]
+What makes this interesting is the mount contract. Every module type
+shares the same function signature. The orchestrator, a tool, a hook,
+a context manager. They all implement the same async mount function
+that takes a coordinator and returns an optional cleanup callback.
 
-Script text goes here. Natural paragraphs with pause markers.
+The coordinator is the key object here. It's a scoped view of the
+runtime. Each module gets a coordinator that exposes only the
+capabilities appropriate for that module type. A tool gets a narrow
+coordinator. The orchestrator gets a wide one with full runtime access.
 
-[pause]
-
-A new thought begins here. Each spoken paragraph is relatively short.
-
-[pause]
-
-[SECTION: Main Concept Name]
-
-Now let's look at [concept]. [pause]
-
-[concept explanation with verbal description of any visual content]
-
-[pause]
-
-[transition to next concept or section]
-
-[SECTION: ...]
-
-[OUTRO: "This was Chapter N: [Title]. Next: [Next Chapter Title]."]
-[OUTRO MUSIC: 3 seconds]
-[CHAPTER END]
+This is how Amplifier enforces privilege boundaries without inheritance
+hierarchies or role annotations. The coordinator's API surface is the
+permission system.
 ```
 
-### Pause Markers
+Scripts are **compressed "key points" versions** — not full lecture transcripts. Each chapter condenses to 8–20 lines of tight prose covering the essential concepts, adapted for listening. Paragraph breaks serve as natural pauses.
 
-Use `[pause]` where the listener needs time to absorb:
-- After introducing a new concept before elaborating
-- After a key fact or surprising detail
-- Before transitioning to a new topic
-- After any spoken list (let it land)
-
-Length varies by context — audio production will calibrate, but the marker tells the voice actor where to breathe.
+**Do not include:**
+- `[pause]`, `[CHAPTER START]`, `[CHAPTER END]`, `[BODY]`, `[SECTION]` or any bracketed markers
+- `[INTRO MUSIC]`, `[OUTRO MUSIC]`, or any music cues
+- `[OUTRO: "..."]` transition lines
+- Any `[...]` production annotations
 
 ---
 

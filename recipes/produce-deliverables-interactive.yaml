@@ -20,7 +20,8 @@ context:
   output_dir: "."                    # Where to write deliverables
   subject_name: ""                   # For HTML title and meta tags
   tts_model: "tts-1-hd"             # OpenAI TTS model
-  tts_voice: "onyx"                 # TTS voice (deep, authoritative)
+  tts_voices: '["fable", "nova", "alloy"]'   # TTS voices to synthesize
+  tts_speed: 0.95                    # Slightly slower for comprehension
 
 stages:
   # ── Stage 1: Write narration scripts ─────────────────────────────────────────
@@ -48,8 +49,8 @@ stages:
             The script must:
             - Be adapted for listening (not a verbatim reading)
             - Replace visual references with verbal descriptions
-            - Use pause markers [pause] appropriately
-            - Include chapter start/end markers and music cue markers
+            - Use natural paragraph breaks for pacing (no [pause] markers)
+            - Be clean prose with no production markers of any kind
             - Be approximately {{item.target_minutes}} minutes when spoken at normal pace
 
       - id: script-summary
@@ -80,7 +81,7 @@ stages:
         {{scripts_summary}}
 
         Scripts are in audio/*.txt — review them before TTS synthesis.
-        TTS will call the OpenAI API (model: {{tts_model}}, voice: {{tts_voice}}).
+        TTS will call the OpenAI API (model: {{tts_model}}, voices: {{tts_voices}}, speed: {{tts_speed}}).
 
         To proceed: approve (optionally with feedback like "rewrite chapter 3 shorter")
         To stop: deny
@@ -98,7 +99,8 @@ stages:
         context:
           audio_dir: "audio"
           tts_model: "{{tts_model}}"
-          tts_voice: "{{tts_voice}}"
+          tts_voices: "{{tts_voices}}"
+          tts_speed: "{{tts_speed}}"
 
       - id: build-site
         type: agent
@@ -127,9 +129,15 @@ stages:
           **Audio player (required if MP3 files exist in audio/):**
           Check the audio/ directory for .mp3 files. If MP3 files are present,
           build the chapter audio player per the Audio Player Contract in
-          @education:context/deliverable-specs.md: AUDIO_FILES map, nav pill
-          play/pause button, per-chapter TOC buttons, scroll-to-audio sync,
-          auto-advance, P keyboard shortcut, single shared <audio> element.
+          @education:context/deliverable-specs.md:
+
+          - AUDIO_FILES (primary voice) + VOICE_AUDIO_FILES (per-voice) maps
+          - Voice selector (pills/menu, dynamic detection, preserves currentTime)
+          - Speed selector (0.75×–2× cycle, persists across chapters)
+          - Transport controls (back 15s, forward 15s, scrubber, mm:ss display)
+          - "Listen to this chapter" affordance under each chapter title
+          - Nav pill play/pause, per-chapter TOC buttons, scroll-to-audio sync,
+            auto-advance, P keyboard shortcut, single shared <audio> element
 
           If no MP3 files exist in audio/, omit the audio player entirely.
         output: site_build_report
@@ -141,8 +149,8 @@ stages:
           Review {{output_dir}}/site.html against the education bundle's design standards.
 
           Check for:
-          1. Paper Frame token compliance — canvas #EDEBE6, card #FFFFFF, text contrast ratios
-          2. Typography — Lora for headings, Inter for body, correct weight/size hierarchy
+          1. Design token compliance — verify chosen variant (Paper Frame or Slate Folio) from DESIGN-SYSTEM.md
+          2. Typography — correct heading/body/code families per chosen variant
           3. Layout — max-width constraints, reading column width, wide breakout behavior
           4. Audio player — if MP3s exist, verify AUDIO_FILES map, nav pill, TOC buttons
           5. Accessibility — WCAG AA contrast, semantic HTML, focus indicators
@@ -192,7 +200,7 @@ stages:
           - Speaker notes panel (N key to toggle, hidden from projected view)
           - Slide overview mode (Escape key — grid of all slide thumbnails)
           - Full presentation keyboard controls (F for fullscreen, G+number for go-to)
-          - Same Paper Frame design tokens as site.html
+          - Same design tokens as site.html (per DESIGN-SYSTEM.md variant)
 
           {{_approval_message}}
 
