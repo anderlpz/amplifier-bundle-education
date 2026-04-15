@@ -51,12 +51,17 @@ amplifier recipe execute education:recipes/update-edition.yaml \
 ## Prerequisites
 
 **Required for all deliverables:**
-- Amplifier with the education bundle configured
+- [Amplifier](https://github.com/microsoft/amplifier) installed and configured
+- **An LLM provider** — at least one API key configured (Anthropic, OpenAI, or Google). Every pipeline step uses an LLM.
+- **`GOOGLE_API_KEY`** — required for concept image generation in Phase 3 (nano-banana uses Gemini)
 
 **Required for audio production (MP3 synthesis):**
-- **OpenAI API key** — `OPENAI_API_KEY` in your environment
+- **`OPENAI_API_KEY`** — required for TTS synthesis (and also works as your LLM provider)
 - **ffmpeg** — `brew install ffmpeg` (macOS) or `apt install ffmpeg` (Linux)
 - **openai Python package** — `pip install openai` or `uv add openai`
+
+**Optional:**
+- **`design-intelligence-enhanced` bundle** — used by the interactive recipe's design review gate. Not required for the flat/autonomous pipeline.
 
 Set `produce_audio: false` in the recipe context to skip narration and TTS entirely.
 
@@ -64,7 +69,7 @@ Set `produce_audio: false` in the recipe context to skip narration and TTS entir
 
 ## Features
 
-- **Parallax Discovery** — content is built from verified claims, not AI assumptions. Multi-agent, multi-pass investigation produces a reconciliation document with file:line evidence for every claim.
+- **Two-tier discovery** — quick mode (default) does a single-pass structured reading at ~1× repo token cost. Deep mode (opt-in) runs full Parallax Discovery with 3 independent passes for complex repos. Both produce a verified knowledge base with file:line evidence.
 - **Inductive content structure** — the content-strategist enforces concrete-first, principle-second structure across all sections. No AI-default deductive writing.
 - **Concept-first visual workflow** — generate visual targets with nano-banana, approve the art direction, then build production SVGs. Human judgment at every visual gate.
 - **Four deliverables, one source** — site, deck, audio, and diagrams are all generated from the same section markdown files. Edit a section, rebuild all four.
@@ -81,8 +86,8 @@ Set `produce_audio: false` in the recipe context to skip narration and TTS entir
 ```
 Source repo
     │
-    ▼ discover.yaml
-Parallax Discovery → reconciliation.md
+    ▼ discover-quick.yaml (default) or discover-deep.yaml (opt-in)
+Structured reading (or Parallax 3-pass) → reconciliation.md
     │
     ▼ shape-content.yaml
 Content strategy → Section markdown files
@@ -134,7 +139,8 @@ The flat version is what `full-edition.yaml` calls. The interactive version is i
 | Recipe | Phase | Type | Description |
 |--------|-------|------|-------------|
 | `full-edition.yaml` | All | Flat | Master pipeline: discovery → content → assets → deliverables |
-| `discover.yaml` | 1 | Flat | Parallax Discovery → reconciliation.md |
+| `discover-quick.yaml` | 1 | Flat | Single-pass structured reading (default, ~1× token cost) |
+| `discover-deep.yaml` | 1 | Flat | Full Parallax 3-pass discovery (opt-in, ~3-5× token cost) |
 | `shape-content.yaml` | 2 | Flat | Content strategy + section authoring |
 | `generate-assets.yaml` | 3 | Staged | Concept images → approval gate → production SVGs |
 | `produce-deliverables.yaml` | 4 | Flat | Scripts → TTS → site → deck → verify (autonomous) |

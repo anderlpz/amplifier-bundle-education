@@ -37,22 +37,34 @@ amplifier recipe execute education:recipes/update-edition.yaml \
 amplifier recipe execute education:recipes/produce-deliverables.yaml
 ```
 
-The `full-edition` recipe will pause at the visual art direction gate (Phase 3) for your approval. Everything else runs automatically.
+The `full-edition` recipe will pause at the visual art direction gate (Phase 3) for your approval. Everything else runs automatically. Discovery defaults to quick (single-pass). For complex repos, use deep discovery:
+
+```bash
+amplifier recipe execute education:recipes/full-edition.yaml \
+  source_repo=/path/to/complex/repo \
+  subject_name="Complex System" \
+  discovery_depth=deep
+```
 
 ---
 
 ## Prerequisites
 
 **Required for all deliverables:**
-- Amplifier with the education bundle configured
+- [Amplifier](https://github.com/microsoft/amplifier) installed and configured
+- **An LLM provider** — at least one API key configured. Every pipeline step uses an LLM. Supported providers: Anthropic (`ANTHROPIC_API_KEY`), OpenAI (`OPENAI_API_KEY`), or Google (`GOOGLE_API_KEY`).
+- **`GOOGLE_API_KEY`** — required for concept image generation in Phase 3 (nano-banana uses Gemini for visual asset concepts)
 
 **Required for audio production (MP3 synthesis):**
-- **OpenAI API key** — set `OPENAI_API_KEY` in your environment (used by the TTS API)
-- **ffmpeg** — required for concatenating multi-chunk audio. Install with:
+- **`OPENAI_API_KEY`** — required for TTS synthesis via the OpenAI speech API (also works as your LLM provider)
+- **ffmpeg** — required for OPUS-to-MP3 conversion and multi-chunk audio concatenation. Install with:
   - macOS: `brew install ffmpeg`
   - Ubuntu/Debian: `sudo apt install ffmpeg`
   - Fedora: `sudo dnf install ffmpeg`
 - **openai Python package** — `pip install openai` or `uv add openai`
+
+**Optional:**
+- **`design-intelligence-enhanced` bundle** — used by the interactive recipe's design review gate (Gate 2). Not required for the flat/autonomous pipeline.
 
 If you don't need MP3 audio, set `produce_audio: false` in the recipe context to skip narration and TTS entirely.
 
@@ -84,14 +96,23 @@ includes:
 
 ## The Pipeline Explained
 
-### Phase 1: Parallax Discovery (`discover.yaml`)
+### Phase 1: Discovery (`discover-quick.yaml` or `discover-deep.yaml`)
 
-The pipeline starts with verified facts, not AI assumptions. The `discover` recipe runs Parallax Discovery — a multi-agent, multi-pass investigation of your source content.
+The pipeline starts with verified understanding of the source material. Two modes are available:
+
+| Mode | Recipe | Token cost | Use when |
+|------|--------|-----------|----------|
+| **Quick** (default) | `discover-quick.yaml` | ~1× repo volume | Most repos. Single-pass structured reading with teaching lens. |
+| **Deep** (opt-in) | `discover-deep.yaml` | ~3-5× repo volume | Large, complex, or poorly-documented repos. Full Parallax 3-pass with cross-validation. |
+
+Set `discovery_depth: "deep"` in the `full-edition.yaml` context to use deep discovery. The default is `"quick"`.
+
+Both modes produce the same output: `.design/reconciliation.md` — a verified knowledge base with VC-XX claims, core concepts in teaching order, design decisions, and a diagram content guide.
 
 **Input:** Source repository path
-**Output:** `.design/reconciliation.md` — verified claims with file:line evidence
+**Output:** `.design/reconciliation.md` — verified knowledge with file:line evidence
 
-Each verified claim gets a VC-XX identifier. These IDs are used internally to trace which sections are affected when the source changes. They never appear in any reader-facing output.
+Each knowledge claim gets a VC-XX identifier. These IDs are used internally to trace which sections are affected when the source changes. They never appear in any reader-facing output.
 
 **Human override point:** Edit `reconciliation.md` after the discovery completes. If a claim is wrong or missing, fix it before running `shape-content`.
 

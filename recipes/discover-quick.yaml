@@ -1,0 +1,72 @@
+# Single-pass structured reading — the default discovery mode.
+# Compare with discover-deep.yaml for the full Parallax 3-pass approach.
+#
+# This reads the repo once with a teaching-oriented lens. ~1× repo token cost.
+# Good enough for most repos. Use deep discovery for large, complex, or
+# poorly-documented repos where single-pass might miss things.
+
+name: discover-quick
+description: >
+  Phase 1 (Quick): Single-pass structured reading with teaching lens.
+  One agent reads the repo once, producing a verified knowledge base
+  for curriculum design. Same reconciliation.md format as deep discovery.
+  Default mode — use discover-deep.yaml for 3-pass Parallax when accuracy
+  on complex repos justifies the token cost.
+
+context:
+  source_repo: ""        # Required: path to source repository
+  subject_name: ""       # Required: subject name for the reconciliation document
+  output_path: ".design/reconciliation.md"  # Where to write the reconciliation
+
+steps:
+  - id: structured-read
+    type: agent
+    agent: foundation:explorer
+    prompt: >
+      Read and understand {{source_repo}} well enough to teach it.
+
+      Subject: {{subject_name}}
+
+      **Purpose: We are building an education product.** Read the repo with a
+      teaching-oriented lens. You are learning how this system works so you can
+      explain it clearly to a student. You are NOT auditing for issues.
+
+      Work through these knowledge categories in a single structured pass:
+
+      1. **What is this system?** Read the README, top-level docs, and entry points.
+         What problem does it solve? What is its core philosophy?
+      2. **How is it structured?** Map the key directories, modules, and layers.
+         What are the main components and how do they relate?
+      3. **How do the important mechanisms work?** Trace 3-5 key execution paths
+         through the source. Follow call chains, read implementations.
+      4. **What design decisions were made and why?** Look for architecture docs,
+         comments explaining trade-offs, patterns that reveal intentional choices.
+      5. **How is it meant to be used?** Find examples, tests, configuration files,
+         and entry points that show the intended usage patterns.
+
+      For each knowledge claim, cite file:line evidence from the source.
+
+      **Focus on understanding, not completeness.** Cover the 80% that matters for
+      teaching. Skip: tests, CI config, build scripts, vendored dependencies,
+      generated files.
+
+      Produce {{output_path}} with:
+
+      1. **System Overview** — What is {{subject_name}}? What problem does it solve?
+         What is its core design philosophy?
+
+      2. **Verified Knowledge (VC-XX format)** — Each item is something we now
+         understand to be true. State as "The system does X because Y" with
+         file:line evidence and confidence level.
+
+      3. **Core Concepts** — The key ideas a student must understand, in suggested
+         teaching order. What depends on what?
+
+      4. **Design Decisions (XC-XX)** — Architectural choices and trade-offs.
+         Why was it designed this way? These are the "aha moments" in a class.
+
+      5. **Diagram Content Guide** — Which concepts need visual explanation?
+
+      **Do NOT include** discrepancy sections, gap analysis, audit language,
+      or numbered unknowns (D-XX, UNK-XX). If something is uncertain, mark
+      it as confidence: uncertain on the relevant VC-XX claim.

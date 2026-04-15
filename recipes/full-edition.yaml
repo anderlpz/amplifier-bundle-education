@@ -1,8 +1,9 @@
 name: full-edition
 description: >
   Produce a complete multi-modal education edition from source content.
-  Runs the full pipeline: Parallax Discovery → content shaping → visual assets (with approval gate) → deliverable production.
-  Requires source_repo and subject_name. Produces site.html, deck.html, and audio/*.txt.
+  Runs the full pipeline: discovery → content shaping → visual assets (with approval gate) → deliverable production.
+  Requires source_repo and subject_name. Produces site.html, deck.html, and audio/.
+  Discovery defaults to quick (single-pass) — set discovery_depth: "deep" for full Parallax 3-pass.
 
 context:
   source_repo: ""           # Required: path to source repository or document
@@ -11,6 +12,7 @@ context:
   output_dir: "."           # Where to write deliverables (default: current directory)
   aesthetic_ref: ""         # Optional: art direction reference URL or description
   audience: ""              # Optional: audience description for content-strategist
+  discovery_depth: "quick"  # "quick" (single-pass, default) or "deep" (Parallax 3-pass)
 
 steps:
   - id: init-workspace
@@ -26,9 +28,18 @@ steps:
 
       Report which files were created or already existed.
 
-  - id: discover
+  - id: discover-quick
     type: recipe
-    recipe: education:recipes/discover.yaml
+    condition: "{{discovery_depth}} == 'quick'"
+    recipe: education:recipes/discover-quick.yaml
+    context:
+      source_repo: "{{source_repo}}"
+      subject_name: "{{subject_name}}"
+
+  - id: discover-deep
+    type: recipe
+    condition: "{{discovery_depth}} == 'deep'"
+    recipe: education:recipes/discover-deep.yaml
     context:
       source_repo: "{{source_repo}}"
       subject_name: "{{subject_name}}"
@@ -39,7 +50,7 @@ steps:
     context:
       subject_name: "{{subject_name}}"
       audience: "{{audience}}"
-      reconciliation: "{{discover.reconciliation_path}}"
+      reconciliation: ".design/reconciliation.md"
 
   - id: generate-assets
     type: recipe

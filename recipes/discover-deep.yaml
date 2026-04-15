@@ -1,9 +1,16 @@
-name: discover
+# Full Parallax 3-pass discovery — the deep/opt-in mode.
+# Compare with discover-quick.yaml for the single-pass default.
+#
+# Use this for large, complex, or poorly-documented repos where the extra
+# token cost (~3-5× repo volume) is justified by cross-validated accuracy.
+# Set discovery_depth: "deep" in full-edition.yaml context to use this.
+
+name: discover-deep
 description: >
-  Phase 1: Deep understanding of source content via Parallax Discovery.
+  Phase 1 (Deep): Full Parallax Discovery with 3 independent passes.
   Runs multi-agent, multi-pass analysis to build a verified knowledge base
-  for teaching. The output is NOT an audit — it is a comprehensive understanding
-  of what the system is, how it works, and why it is designed that way.
+  for teaching. More thorough than quick discovery but significantly more
+  token-heavy. Use for complex repos where single-pass might miss things.
   Output feeds shape-content phase as source material for curriculum design.
 
 context:
