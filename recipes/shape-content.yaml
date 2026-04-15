@@ -1,4 +1,5 @@
 name: shape-content
+version: "1.0.0"
 description: >
   Phase 2: Content strategy and section authoring.
   Reads the Parallax Discovery reconciliation and produces CONTENT-STRATEGY.md

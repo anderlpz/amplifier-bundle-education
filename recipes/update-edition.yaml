@@ -1,4 +1,5 @@
 name: update-edition
+version: "1.0.0"
 description: >
   Detect changes in source content and update the minimum necessary set of sections,
   assets, and deliverables. STAGED — requires human approval of the update plan before

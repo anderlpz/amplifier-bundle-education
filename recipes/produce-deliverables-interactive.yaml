@@ -9,6 +9,7 @@
 # The flat version is called by full-edition.yaml for autonomous runs.
 
 name: produce-deliverables-interactive
+version: "1.0.0"
 description: >
   Phase 4 (interactive): Generate deliverables with human review gates.
   Pauses after narration scripts (before TTS costs) and after site build

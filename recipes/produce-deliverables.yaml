@@ -4,6 +4,7 @@
 # This is the version called by full-edition.yaml.
 
 name: produce-deliverables
+version: "1.0.0"
 description: >
   Phase 4: Generate all three deliverables from completed sections and assets.
   Produces voiceover scripts, synthesizes MP3 audio, then builds the HTML reading

@@ -6,6 +6,7 @@
 # poorly-documented repos where single-pass might miss things.
 
 name: discover-quick
+version: "1.0.0"
 description: >
   Phase 1 (Quick): Single-pass structured reading with teaching lens.
   One agent reads the repo once, producing a verified knowledge base

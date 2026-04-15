@@ -1,4 +1,5 @@
 name: generate-assets
+version: "1.0.0"
 description: >
   Phase 3: Visual asset generation pipeline (STAGED — has approval gate).
   Stage 1: visual-director reads sections, establishes aesthetic direction, generates concept images.

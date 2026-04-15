@@ -1,4 +1,5 @@
 name: synthesize-audio
+version: "1.0.0"
 description: >
   Convert narration scripts (audio/*.txt) to MP3 audio files via TTS.
   Synthesizes multiple voices in parallel, uses OPUS intermediate format

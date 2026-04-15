@@ -6,6 +6,7 @@
 # Set discovery_depth: "deep" in full-edition.yaml context to use this.
 
 name: discover-deep
+version: "1.0.0"
 description: >
   Phase 1 (Deep): Full Parallax Discovery with 3 independent passes.
   Runs multi-agent, multi-pass analysis to build a verified knowledge base
