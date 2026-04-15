@@ -18,7 +18,7 @@ stages:
     steps:
       - id: catalog-assets
         type: agent
-        agent: education:visual-director
+        agent: education:agents/visual-director
         prompt: >
           Read all sections in {{sections_dir}} and build a complete asset catalog.
           For each section with a diagram, table, or comparison block, document:
@@ -37,7 +37,7 @@ stages:
 
       - id: generate-concepts
         type: agent
-        agent: education:visual-director
+        agent: education:agents/visual-director
         prompt: >
           Generate concept images for the visual assets.
 
@@ -75,7 +75,7 @@ stages:
     steps:
       - id: finalize-aesthetic
         type: agent
-        agent: education:visual-director
+        agent: education:agents/visual-director
         prompt: >
           The concept direction has been approved. Approval message: {{_approval_message}}
 
@@ -92,20 +92,19 @@ stages:
           The aesthetic guide is now the production brief for asset-builder.
 
       - id: build-assets
-        type: foreach
-        items: "{{finalize-aesthetic.pending_assets}}"
-        step:
-          id: build-asset
-          type: agent
-          agent: education:asset-builder
-          prompt: >
-            Build the SVG diagram for: {{item.asset_id}}
+        foreach: "{{finalize-aesthetic.pending_assets}}"
+        as: item
+        type: agent
+        agent: education:agents/asset-builder
+        prompt: >
+          Build the SVG diagram for: {{item.asset_id}}
 
-            Read .design/AESTHETIC-GUIDE.md for the definitive style specs.
-            Read the per-diagram specification for {{item.asset_id}} in the aesthetic guide.
-            Read the section content for {{item.section_title}} to understand what to show.
+          Read .design/AESTHETIC-GUIDE.md for the definitive style specs.
+          Read the per-diagram specification for {{item.asset_id}} in the aesthetic guide.
+          Read the section content for {{item.section_title}} to understand what to show.
 
-            Produce: public/diagrams/{{item.asset_id}}.svg
+          Produce: public/diagrams/{{item.asset_id}}.svg
 
-            After writing, note the file was produced and update
-            .design/VISUAL-STRATEGY.md status for {{item.asset_id}} to "complete".
+          After writing, note the file was produced and update
+          .design/VISUAL-STRATEGY.md status for {{item.asset_id}} to "complete".
+        collect: results

@@ -7,6 +7,10 @@ description: >
   concatenates multi-chunk outputs, and skips chapters whose MP3
   is already newer than the source script.
 
+  Prerequisites: OPENAI_API_KEY environment variable, openai Python package,
+  ffmpeg system binary. The check-prerequisites step verifies all three
+  before any TTS calls are made.
+
 context:
   audio_dir: "audio"                # Directory containing .txt scripts and .mp3 output
   tts_provider: "openai"            # "openai" (default); extensible to "elevenlabs" later
@@ -16,6 +20,28 @@ context:
   chunk_limit: 4096                  # Max characters per TTS API call
 
 steps:
+  - id: check-prerequisites
+    type: agent
+    agent: foundation:modular-builder
+    prompt: >
+      Verify that all prerequisites for TTS synthesis are available.
+      Write and run a short Python script that checks each requirement
+      and exits non-zero if any are missing.
+
+      Check these three things:
+
+      1. **OPENAI_API_KEY environment variable** — verify os.environ.get("OPENAI_API_KEY")
+         is set and non-empty. Do NOT print the key value — just confirm it exists.
+
+      2. **openai Python package** — verify `import openai` succeeds.
+         If it fails, print: "Missing Python package: openai. Install with: pip install openai"
+
+      3. **ffmpeg system binary** — verify `shutil.which("ffmpeg")` returns a path.
+         If it fails, print: "Missing system binary: ffmpeg. Install with: brew install ffmpeg (macOS) or apt install ffmpeg (Linux)"
+
+      If all three checks pass, print "All TTS prerequisites satisfied." and exit 0.
+      If any check fails, print all failures and exit 1.
+
   - id: synthesize
     type: agent
     agent: foundation:modular-builder

@@ -32,7 +32,7 @@ steps:
   - id: discover-quick
     type: recipe
     condition: "{{discovery_depth}} == 'quick'"
-    recipe: education:recipes/discover-quick.yaml
+    recipe: @education:recipes/discover-quick.yaml
     context:
       source_repo: "{{source_repo}}"
       subject_name: "{{subject_name}}"
@@ -40,14 +40,14 @@ steps:
   - id: discover-deep
     type: recipe
     condition: "{{discovery_depth}} == 'deep'"
-    recipe: education:recipes/discover-deep.yaml
+    recipe: @education:recipes/discover-deep.yaml
     context:
       source_repo: "{{source_repo}}"
       subject_name: "{{subject_name}}"
 
   - id: shape-content
     type: recipe
-    recipe: education:recipes/shape-content.yaml
+    recipe: @education:recipes/shape-content.yaml
     context:
       subject_name: "{{subject_name}}"
       audience: "{{audience}}"
@@ -55,14 +55,14 @@ steps:
 
   - id: generate-assets
     type: recipe
-    recipe: education:recipes/generate-assets.yaml
+    recipe: @education:recipes/generate-assets.yaml
     context:
       sections_dir: "{{shape-content.sections_dir}}"
       aesthetic_ref: "{{aesthetic_ref}}"
 
   - id: produce-deliverables
     type: recipe
-    recipe: education:recipes/produce-deliverables.yaml
+    recipe: @education:recipes/produce-deliverables.yaml
     context:
       sections_dir: "{{shape-content.sections_dir}}"
       assets_dir: "public/diagrams"
@@ -71,7 +71,7 @@ steps:
 
   - id: record-edition
     type: agent
-    agent: education:edition-manager
+    agent: education:agents/edition-manager
     prompt: >
       Record this as Edition {{edition}} of the {{subject_name}} education product.
       Write .edition/manifest.json, .edition/source-hashes.json,

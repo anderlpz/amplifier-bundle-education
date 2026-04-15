@@ -61,6 +61,8 @@ Produce a single self-contained HTML file following `@education:context/delivera
 8. Embed D3 dotgraph viewer for any `diagram` blocks with `variant: interactive`
 9. Render interactive components: term definition tooltips, annotated code blocks, flow-table units, design decision callouts
 
+**Layout rule:** ALL chapter sections use the same reading width (max-width: 660px for the inner container). Do NOT add a "wide" class or any width variant to section containers. Images, SVGs, and diagrams should use max-width: 100% within the standard reading column. If a diagram needs to break out wider, use a figure-level negative margin (margin-left: -150px; margin-right: -150px) that does not affect the prose container width.
+
 **Audio player (conditional):**
 Check `audio/` for MP3 files. If present, build the full audio player system per the Audio Player Contract in the deliverable spec: AUDIO_FILES + VOICE_AUDIO_FILES maps, voice selector, speed selector, transport controls, scroll-to-audio sync, auto-advance, keyboard shortcuts.
 

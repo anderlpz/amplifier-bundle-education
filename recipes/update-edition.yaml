@@ -18,7 +18,7 @@ stages:
     steps:
       - id: compute-hashes
         type: agent
-        agent: education:edition-manager
+        agent: education:agents/edition-manager
         prompt: >
           Compute SHA-256 hashes of all files in {{source_repo}} and compare against
           .edition/source-hashes.json.
@@ -40,7 +40,7 @@ stages:
 
       - id: trace-impact
         type: agent
-        agent: education:edition-manager
+        agent: education:agents/edition-manager
         prompt: >
           Given the source changes in .design/source-diff.json, trace the impact
           through the education product using the claim mapping in .design/CONTENT-STRATEGY.md.
@@ -63,7 +63,7 @@ stages:
 
       - id: build-plan
         type: agent
-        agent: education:edition-manager
+        agent: education:agents/edition-manager
         prompt: >
           Synthesize the impact analysis into a concrete, minimal update plan.
 
@@ -116,46 +116,44 @@ stages:
           These are temporary — they feed the section rewrite, not the permanent reconciliation.
 
       - id: update-sections
-        type: foreach
-        items: "{{build-plan.sections_to_update}}"
-        step:
-          id: update-section
-          type: agent
-          agent: education:section-author
-          prompt: >
-            Rewrite section: Chapter {{item.chapter}} — {{item.title}}
+        foreach: "{{build-plan.sections_to_update}}"
+        as: item
+        type: agent
+        agent: education:agents/section-author
+        prompt: >
+          Rewrite section: Chapter {{item.chapter}} — {{item.title}}
 
-            The following claims changed:
-            {{item.affected_claims}}
+          The following claims changed:
+          {{item.affected_claims}}
 
-            Updated facts are in .design/updated-claims.md.
-            The content strategy in .design/CONTENT-STRATEGY.md is unchanged.
-            The existing section is at .design/sections/{{item.filename}} — preserve structure where possible.
+          Updated facts are in .design/updated-claims.md.
+          The content strategy in .design/CONTENT-STRATEGY.md is unchanged.
+          The existing section is at .design/sections/{{item.filename}} — preserve structure where possible.
 
-            Rewrite only the paragraphs that contain the changed facts.
-            Update source_claims frontmatter if claim IDs changed.
-            Preserve all other content, block structure, and frontmatter.
+          Rewrite only the paragraphs that contain the changed facts.
+          Update source_claims frontmatter if claim IDs changed.
+          Preserve all other content, block structure, and frontmatter.
+        collect: results
 
       - id: regenerate-assets
-        type: foreach
-        items: "{{build-plan.assets_to_regenerate}}"
-        step:
-          id: regen-asset
-          type: agent
-          agent: education:asset-builder
-          prompt: >
-            Regenerate asset: {{item.asset_id}}
+        foreach: "{{build-plan.assets_to_regenerate}}"
+        as: item
+        type: agent
+        agent: education:agents/asset-builder
+        prompt: >
+          Regenerate asset: {{item.asset_id}}
 
-            The section content changed. Re-read:
-            - .design/sections/{{item.section_filename}} (updated)
-            - .design/AESTHETIC-GUIDE.md (unchanged — use same visual style)
-            - The per-diagram spec for {{item.asset_id}} in the aesthetic guide
+          The section content changed. Re-read:
+          - .design/sections/{{item.section_filename}} (updated)
+          - .design/AESTHETIC-GUIDE.md (unchanged — use same visual style)
+          - The per-diagram spec for {{item.asset_id}} in the aesthetic guide
 
-            Produce updated: public/diagrams/{{item.asset_id}}.svg
+          Produce updated: public/diagrams/{{item.asset_id}}.svg
+        collect: asset_results
 
       - id: rebuild-deliverables
         type: agent
-        agent: education:edition-manager
+        agent: education:agents/edition-manager
         prompt: >
           Rebuild the affected deliverables.
 
@@ -170,7 +168,7 @@ stages:
 
       - id: update-edition
         type: agent
-        agent: education:edition-manager
+        agent: education:agents/edition-manager
         prompt: >
           Record the updated edition.
 

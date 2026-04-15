@@ -24,48 +24,41 @@ context:
 
 steps:
   - id: build-narration
-    type: conditional
     condition: "{{produce_audio}}"
-    step:
-      id: write-scripts
-      type: foreach
-      items: "{{sections_dir}}"
-      step:
-        id: write-script
-        type: agent
-        agent: education:narration-adapter
-        prompt: >
-          Write the voiceover script for: {{item.chapter_title}}
+    foreach: "{{sections_dir}}"
+    as: item
+    type: agent
+    agent: education:agents/narration-adapter
+    prompt: >
+      Write the voiceover script for: {{item.chapter_title}}
 
-          Read the section content at {{sections_dir}}/{{item.section_filename}}.
-          Follow the voice guidelines in .design/CONTENT-STRATEGY.md.
-          Read @education:context/deliverable-specs.md Deliverable 3 specification.
+      Read the section content at {{sections_dir}}/{{item.section_filename}}.
+      Follow the voice guidelines in .design/CONTENT-STRATEGY.md.
+      Read @education:context/deliverable-specs.md Deliverable 3 specification.
 
-          Produce: audio/{{item.asset_ref}}.txt
+      Produce: audio/{{item.asset_ref}}.txt
 
-          The script must:
-          - Be adapted for listening (not a verbatim reading)
-          - Replace visual references with verbal descriptions
-          - Use natural paragraph breaks for pacing (no [pause] markers)
-          - Be clean prose with no production markers of any kind
-          - Be approximately {{item.target_minutes}} minutes when spoken at normal pace
+      The script must:
+      - Be adapted for listening (not a verbatim reading)
+      - Replace visual references with verbal descriptions
+      - Use natural paragraph breaks for pacing (no [pause] markers)
+      - Be clean prose with no production markers of any kind
+      - Be approximately {{item.target_minutes}} minutes when spoken at normal pace
+    collect: results
 
   - id: synthesize-audio
-    type: conditional
     condition: "{{produce_audio}}"
-    step:
-      id: run-tts
-      type: recipe
-      recipe: education:recipes/synthesize-audio.yaml
-      context:
-        audio_dir: "audio"
-        tts_model: "{{tts_model}}"
-        tts_voices: "{{tts_voices}}"
-        tts_speed: "{{tts_speed}}"
+    type: recipe
+    recipe: @education:recipes/synthesize-audio.yaml
+    context:
+      audio_dir: "audio"
+      tts_model: "{{tts_model}}"
+      tts_voices: "{{tts_voices}}"
+      tts_speed: "{{tts_speed}}"
 
   - id: build-site
     type: agent
-    agent: education:site-builder
+    agent: education:agents/site-builder
     prompt: >
       Build the complete HTML reading site from the section content.
 
@@ -129,7 +122,7 @@ steps:
 
   - id: build-deck
     type: agent
-    agent: education:deck-composer
+    agent: education:agents/deck-composer
     prompt: >
       Build the standalone HTML presentation deck from the section content.
 

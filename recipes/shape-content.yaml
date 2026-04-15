@@ -15,7 +15,7 @@ context:
 steps:
   - id: create-strategy
     type: agent
-    agent: education:content-strategist
+    agent: education:agents/content-strategist
     prompt: >
       Analyze the Parallax Discovery reconciliation and produce a complete content strategy.
 
@@ -34,25 +34,24 @@ steps:
       Apply the content rules from @education:context/content-model.md throughout.
 
   - id: write-sections
-    type: foreach
-    items: "{{create-strategy.section_list}}"
-    step:
-      id: write-section
-      type: agent
-      agent: education:section-author
-      prompt: >
-        Write the section markdown for: {{item.title}} (Chapter {{item.chapter}})
+    foreach: "{{create-strategy.section_list}}"
+    as: item
+    type: agent
+    agent: education:agents/section-author
+    prompt: >
+      Write the section markdown for: {{item.title}} (Chapter {{item.chapter}})
 
-        Follow the content strategy in .design/CONTENT-STRATEGY.md exactly.
-        Use the verified claims listed for this section from the reconciliation.
+      Follow the content strategy in .design/CONTENT-STRATEGY.md exactly.
+      Use the verified claims listed for this section from the reconciliation.
 
-        Section outline entry:
-        {{item.outline_entry}}
+      Section outline entry:
+      {{item.outline_entry}}
 
-        Write to: {{sections_dir}}/{{item.filename}}
+      Write to: {{sections_dir}}/{{item.filename}}
 
-        Include:
-        1. Proper YAML frontmatter with all blocks, statuses, and source_claims
-        2. Prose following inductive structure (concrete first, principle second)
-        3. Presentation slides section (condensed bullets)
-        4. Speaker notes section (full explanation for presenter)
+      Include:
+      1. Proper YAML frontmatter with all blocks, statuses, and source_claims
+      2. Prose following inductive structure (concrete first, principle second)
+      3. Presentation slides section (condensed bullets)
+      4. Speaker notes section (full explanation for presenter)
+    collect: results
