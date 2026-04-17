@@ -3,7 +3,8 @@ version: "1.0.0"
 description: >
   Produce a complete multi-modal education edition from source content.
   Runs the full pipeline: discovery → content shaping → visual assets (with approval gate) → deliverable production.
-  Requires source_repo and subject_name. Produces site.html, deck.html, and audio/.
+  Requires source_repo and subject_name. Produces {subject_slug}-site.html, {subject_slug}-deck.html,
+  {subject_slug}.md, {subject_slug}.pdf, and audio/.
   Discovery defaults to quick (single-pass) — set discovery_depth: "deep" for full Parallax 3-pass.
 
 context:
@@ -28,6 +29,22 @@ steps:
       3. If .design/DESIGN-SYSTEM.md already exists, leave it unchanged
 
       Report which files were created or already existed.
+
+  - id: derive-slug
+    type: agent
+    agent: foundation:explorer
+    prompt: >
+      Generate a URL-safe slug from the subject name: "{{subject_name}}"
+
+      Rules:
+      - Lowercase all characters
+      - Replace spaces and special characters with hyphens
+      - Remove consecutive hyphens
+      - Trim leading/trailing hyphens
+      - Example: "Design Intelligence for Amplifier" → "design-intelligence-for-amplifier"
+
+      Return ONLY the slug as your response, nothing else.
+    output: subject_slug
 
   - id: discover-quick
     type: recipe
@@ -68,6 +85,7 @@ steps:
       assets_dir: "public/diagrams"
       output_dir: "{{output_dir}}"
       subject_name: "{{subject_name}}"
+      subject_slug: "{{derive-slug.subject_slug}}"
 
   - id: record-edition
     type: agent
@@ -79,4 +97,5 @@ steps:
       Source repo: {{source_repo}}
       Sections: {{shape-content.sections_dir}}
       Assets: public/diagrams/
-      Deliverables: site.html, deck.html, audio/
+      Subject slug: {{derive-slug.subject_slug}}
+      Deliverables: {{derive-slug.subject_slug}}-site.html, {{derive-slug.subject_slug}}-deck.html, {{derive-slug.subject_slug}}.md, {{derive-slug.subject_slug}}.pdf, audio/

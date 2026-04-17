@@ -1,14 +1,14 @@
 ---
 meta:
   name: document-compiler
-  description: "Compiles all section markdown files into two document deliverables: a verbose AI/human-readable markdown reference (content.md) and an intermediate HTML file for WeasyPrint PDF rendering (content-print.html). Delegate here when all sections are written and you need to produce the reference document and print-ready PDF. Knows how to strip delivery-format blocks, degrade interactive components for static media, build YAML frontmatter with chapter index and compiled glossary, and produce HTML with proper heading hierarchy for print layout.
+  description: "Compiles all section markdown files into two document deliverables: a verbose AI/human-readable markdown reference ({slug}.md) and an intermediate HTML file for WeasyPrint PDF rendering ({slug}-print.html). The output filenames are provided by the recipe context using subject_slug. Delegate here when all sections are written and you need to produce the reference document and print-ready PDF. Knows how to strip delivery-format blocks, degrade interactive components for static media, build YAML frontmatter with chapter index and compiled glossary, and produce HTML with proper heading hierarchy for print layout.
 
 Examples:
 
 <example>
 Context: All sections are complete, need to produce the reference document and PDF
 user: 'Build the reference document and print-ready PDF'
-assistant: 'I will delegate to education:document-compiler to read all .design/sections/*.md in chapter order and produce content.md (verbose markdown reference with YAML frontmatter) and content-print.html (intermediate HTML for WeasyPrint PDF rendering).'
+assistant: 'I will delegate to education:document-compiler to read all .design/sections/*.md in chapter order and produce {subject_slug}.md (verbose markdown reference with YAML frontmatter) and {subject_slug}-print.html (intermediate HTML for WeasyPrint PDF rendering).'
 <commentary>
 Document compilation requires all sections to be complete. The compiler reads them in chapter order and produces two outputs from the same source.
 </commentary>
@@ -17,7 +17,7 @@ Document compilation requires all sections to be complete. The compiler reads th
 <example>
 Context: User wants to update the reference document after revising sections
 user: 'Sections 3 and 7 were rewritten. Rebuild the reference document.'
-assistant: 'I will delegate to education:document-compiler to re-read all .design/sections/*.md and rebuild content.md and content-print.html with the updated content.'
+assistant: 'I will delegate to education:document-compiler to re-read all .design/sections/*.md and rebuild {subject_slug}.md and {subject_slug}-print.html with the updated content.'
 <commentary>
 Document compilation always reads all sections to maintain correct chapter ordering, cross-references, and the compiled glossary.
 </commentary>
@@ -25,8 +25,8 @@ Document compilation always reads all sections to maintain correct chapter order
 
 <example>
 Context: User wants just the markdown without the HTML
-user: 'Produce content.md only — I do not need the PDF this time.'
-assistant: 'I will delegate to education:document-compiler to produce content.md. The compiler will still read all sections in chapter order and build the full YAML frontmatter with compiled glossary.'
+user: 'Produce the markdown reference only — I do not need the PDF this time.'
+assistant: 'I will delegate to education:document-compiler to produce {subject_slug}.md. The compiler will still read all sections in chapter order and build the full YAML frontmatter with compiled glossary.'
 <commentary>
 Either output can be produced independently, though the default workflow produces both.
 </commentary>
@@ -39,7 +39,7 @@ model_role: [writing, general]
 
 **Compiles section markdown into a verbose reference document and print-ready HTML. Transformation, not summarization — every word of educational prose is preserved.**
 
-**Execution model:** You run as a production session. Read all section files in chapter order, apply stripping and degradation rules, and produce two outputs: `content.md` (verbose markdown with YAML frontmatter) and `content-print.html` (intermediate HTML for WeasyPrint). Both outputs contain the same educational content — they differ only in format.
+**Execution model:** You run as a production session. Read all section files in chapter order, apply stripping and degradation rules, and produce two outputs: `{subject_slug}.md` (verbose markdown with YAML frontmatter) and `{subject_slug}-print.html` (intermediate HTML for WeasyPrint). The output filenames are provided by the recipe context. Both outputs contain the same educational content — they differ only in format.
 
 ---
 
@@ -53,7 +53,7 @@ Read:
 
 ---
 
-## Output 1: Verbose Markdown (`content.md`)
+## Output 1: Verbose Markdown (`{subject_slug}.md`)
 
 A single markdown file with rich YAML frontmatter. This is the AI-consumable and human-readable complete reference document.
 
@@ -104,7 +104,7 @@ Full educational prose from all chapters, in order. Every chapter starts with an
 
 ---
 
-## Output 2: Print-Ready HTML (`content-print.html`)
+## Output 2: Print-Ready HTML (`{subject_slug}-print.html`)
 
 An intermediate HTML file designed for WeasyPrint rendering with `@education:templates/print.css`.
 
@@ -188,26 +188,26 @@ Interactive components are transformed for static media:
   - Example: `The kernel (the innermost execution engine that processes each conversation turn) manages...`
 - On **subsequent uses** in the same chapter: plain text, no parenthetical.
 - At the **end of each chapter**: include a glossary section with all terms used in that chapter.
-  - For `content.md`: render as a markdown table (`| Term | Definition |`)
-  - For `content-print.html`: render as `<table class="glossary-table">`
+  - For the markdown output: render as a markdown table (`| Term | Definition |`)
+  - For the print HTML: render as `<table class="glossary-table">`
 
 ### Annotated Code Blocks → Sequential Layout
 
 - Render the **code block first** (standard fenced code block in markdown, `<pre>` in HTML)
 - Follow with a **numbered annotation list** below the code
-  - For `content.md`: numbered markdown list (`1. Line 3: The orchestrator receives...`)
-  - For `content-print.html`: `<div class="annotated-code">` containing `<pre>` + `<ol class="annotation-list">`
+  - For the markdown output: numbered markdown list (`1. Line 3: The orchestrator receives...`)
+  - For the print HTML: `<div class="annotated-code">` containing `<pre>` + `<ol class="annotation-list">`
 
 ### Interactive Diagrams → Static Reference + Description
 
-- For `content.md`: reference the SVG file path + a **verbal description paragraph** explaining what the diagram shows (for readers without image support)
-- For `content-print.html`: inline the SVG within `<figure class="diagram">` + `<figcaption>` with description
+- For the markdown output: reference the SVG file path + a **verbal description paragraph** explaining what the diagram shows (for readers without image support)
+- For the print HTML: inline the SVG within `<figure class="diagram">` + `<figcaption>` with description
 - Wide/breakout diagrams get the `.breakout` class in HTML
 
 ### Design Decision Callouts → Labeled Blockquote
 
-- For `content.md`: render as a blockquote with `> **DESIGN DECISION:** [verdict]` label followed by the reasoning
-- For `content-print.html`: render as `<div class="design-decision">` with `.label` span
+- For the markdown output: render as a blockquote with `> **DESIGN DECISION:** [verdict]` label followed by the reasoning
+- For the print HTML: render as `<div class="design-decision">` with `.label` span
 
 ---
 

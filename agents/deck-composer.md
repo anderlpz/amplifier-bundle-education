@@ -1,14 +1,14 @@
 ---
 meta:
   name: deck-composer
-  description: "Condenses section content into a standalone HTML presentation deck with arrow-key navigation and speaker notes. Delegate here when all sections are written and you need to produce deck.html. Knows slide construction rules (one idea per slide), presentation mode transformation, and speaker note format. Produces a complete standalone HTML file — not a framework-based presentation.
+  description: "Condenses section content into a standalone HTML presentation deck with arrow-key navigation and speaker notes. Delegate here when all sections are written and you need to produce the presentation deck. The output filename is provided by the recipe context as {subject_slug}-deck.html. Knows slide construction rules (one idea per slide), presentation mode transformation, and speaker note format. Produces a complete standalone HTML file — not a framework-based presentation.
 
 Examples:
 
 <example>
 Context: All sections are written, ready to build the presentation
 user: 'Build the presentation deck'
-assistant: 'I will delegate to education:deck-composer to read all .design/sections/*.md and produce deck.html — a standalone HTML presentation with arrow-key navigation, slide counter, and speaker notes.'
+assistant: 'I will delegate to education:deck-composer to read all .design/sections/*.md and produce {subject_slug}-deck.html — a standalone HTML presentation with arrow-key navigation, slide counter, and speaker notes.'
 <commentary>
 Deck composition requires all sections to be complete first.
 </commentary>
@@ -17,7 +17,7 @@ Deck composition requires all sections to be complete first.
 <example>
 Context: User wants to update the deck after revising a section
 user: 'Section 7 was rewritten. Update the deck for chapter 7.'
-assistant: 'I will delegate to education:deck-composer to re-read .design/sections/07-*.md and update the Chapter 7 slides in deck.html.'
+assistant: 'I will delegate to education:deck-composer to re-read .design/sections/07-*.md and update the Chapter 7 slides in the presentation deck.'
 <commentary>
 Targeted deck updates are possible without rebuilding everything.
 </commentary>
@@ -30,7 +30,7 @@ model_role: [writing, creative, general]
 
 **Builds the standalone HTML presentation from section content. Slide compression, not summarization.**
 
-**Execution model:** You run as a production session. Read the sections, apply slide construction rules, and produce `deck.html`. The presentation is a transformation of the content — not a separate document. Every slide's speaker notes link back to the section's full explanation.
+**Execution model:** You run as a production session. Read the sections, apply slide construction rules, and produce the presentation deck. The output filename is provided by the recipe context (e.g. `{subject_slug}-deck.html`). The presentation is a transformation of the content — not a separate document. Every slide's speaker notes link back to the section's full explanation.
 
 ---
 
@@ -128,7 +128,7 @@ Speaker notes draw from the section's inline explanations and speaker notes in t
 
 ## HTML Structure
 
-`deck.html` is a standalone single file. No framework, no build step:
+The deck is a standalone single file (e.g. `{subject_slug}-deck.html`). No framework, no build step:
 
 ```html
 <!DOCTYPE html>

@@ -17,6 +17,7 @@ context:
   assets_dir: "public/diagrams"      # Input: generated SVG assets
   output_dir: "."                    # Where to write deliverables
   subject_name: ""                   # For HTML title and meta tags
+  subject_slug: ""                   # URL-safe slug derived from subject_name (e.g. "design-intelligence-for-amplifier")
   produce_audio: true                # Whether to produce narration scripts + MP3s
   tts_model: "tts-1-hd"             # OpenAI TTS model
   tts_voices: '["fable", "nova", "alloy"]'   # TTS voices to synthesize
@@ -68,7 +69,7 @@ steps:
 
       Inline all SVG diagrams from {{assets_dir}} using asset_ref mapping from frontmatter.
 
-      Produce: {{output_dir}}/site.html
+      Produce: {{output_dir}}/{{subject_slug}}-site.html
 
       The site must include:
       - Fixed nav bar with TOC toggle and audio player controls
@@ -130,7 +131,7 @@ steps:
       Pay special attention to each section's "Presentation Slides" and "Speaker Notes" blocks.
       Read @education:context/deliverable-specs.md Deliverable 2 specification.
 
-      Produce: {{output_dir}}/deck.html
+      Produce: {{output_dir}}/{{subject_slug}}-deck.html
 
       The deck must include:
       - Arrow-key and touch-swipe navigation
@@ -138,7 +139,7 @@ steps:
       - Speaker notes panel (N key to toggle, hidden from projected view)
       - Slide overview mode (Escape key — grid of all slide thumbnails)
       - Full presentation keyboard controls (F for fullscreen, G+number for go-to)
-      - Same design tokens as site.html (per DESIGN-SYSTEM.md variant)
+      - Same design tokens as the reading site (per DESIGN-SYSTEM.md variant)
 
   - id: compile-document
     type: agent
@@ -152,8 +153,8 @@ steps:
       Read .design/DESIGN-SYSTEM.md for design tokens.
 
       Produce:
-      - {{output_dir}}/content.md  (Deliverable 4: verbose markdown)
-      - {{output_dir}}/content-print.html  (intermediate HTML for PDF)
+      - {{output_dir}}/{{subject_slug}}.md  (Deliverable 4: verbose markdown)
+      - {{output_dir}}/{{subject_slug}}-print.html  (intermediate HTML for PDF)
 
       Strip all delivery-format blocks (slides, speaker notes, audio, chat, vignette).
       Degrade interactive components per the deliverable spec.
@@ -167,7 +168,7 @@ steps:
       Generate the print-ready PDF from the intermediate HTML.
 
       Run this command:
-        weasyprint --stylesheet @education:templates/print.css {{output_dir}}/content-print.html {{output_dir}}/content.pdf
+        weasyprint --stylesheet @education:templates/print.css {{output_dir}}/{{subject_slug}}-print.html {{output_dir}}/{{subject_slug}}.pdf
 
       If weasyprint is not installed, report:
         "weasyprint is required for PDF generation. Install with: pip install weasyprint"
@@ -181,26 +182,26 @@ steps:
       Verify all deliverables were produced:
 
       Check that these files exist:
-      - {{output_dir}}/site.html
-      - {{output_dir}}/deck.html
-      - {{output_dir}}/content.md
-      - {{output_dir}}/content.pdf
+      - {{output_dir}}/{{subject_slug}}-site.html
+      - {{output_dir}}/{{subject_slug}}-deck.html
+      - {{output_dir}}/{{subject_slug}}.md
+      - {{output_dir}}/{{subject_slug}}.pdf
       - audio/*.txt (one per chapter, if produce_audio was true)
       - audio/*.mp3 (one per chapter, if produce_audio was true)
 
-      Check that site.html:
+      Check that {{subject_slug}}-site.html:
       - Opens and renders (check for major HTML errors)
       - Has the correct number of chapter sections
       - Has presentation mode controls
       - If MP3 files exist: has the AUDIO_FILES map, nav bar audio pill,
         per-chapter TOC play buttons, and the shared <audio> element
 
-      Check that content.md:
+      Check that {{subject_slug}}.md:
       - Has YAML frontmatter with title, edition, date, subject, chapters, glossary
       - Contains all chapters in order
       - Has no VC-XX references or Presentation Slides sections
 
-      Check that content.pdf exists and has a reasonable file size.
+      Check that {{subject_slug}}.pdf exists and has a reasonable file size.
 
       Check that each .txt script has a corresponding .mp3 file.
 

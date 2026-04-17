@@ -1,10 +1,26 @@
 # Deliverable Specifications
 
-The education pipeline produces three deliverables from a single content source. Each deliverable has distinct technical requirements, rendering conventions, and production notes.
+The education pipeline produces five deliverables from a single content source. Each deliverable has distinct technical requirements, rendering conventions, and production notes.
+
+### Output File Naming
+
+All deliverables are named using the subject slug derived from `subject_name`:
+
+| Deliverable | Filename Pattern | Example |
+|-------------|-----------------|---------|
+| Reading site | `{slug}-site.html` | `design-intelligence-for-amplifier-site.html` |
+| Presentation deck | `{slug}-deck.html` | `design-intelligence-for-amplifier-deck.html` |
+| Audio narration | `audio/{voice}/chNN-slug.mp3` | `audio/fable/ch01-introduction.mp3` |
+| Reference document | `{slug}.md` | `design-intelligence-for-amplifier.md` |
+| Print-ready PDF | `{slug}.pdf` | `design-intelligence-for-amplifier.pdf` |
+
+The slug is derived from `subject_name`: lowercase, spaces→hyphens, special chars removed. The intermediate print HTML (`{slug}-print.html`) follows the same pattern.
+
+The markdown and PDF are the canonical "document" and get the clean `{slug}` name. Site and deck get format suffixes (`-site`, `-deck`). Audio stays in the `audio/` directory — the voice subdirectories and chapter files inside are already well-named.
 
 ---
 
-## Deliverable 1: HTML Site (site.html)
+## Deliverable 1: HTML Site (`{slug}-site.html`)
 
 A standalone single-file HTML reading site. No build step, no server required — the file opens in any browser.
 
@@ -242,7 +258,7 @@ Keys in AUDIO_FILES are section IDs (matching the chapter `<section id="...">` i
 
 ---
 
-## Deliverable 2: Presentation Deck (deck.html)
+## Deliverable 2: Presentation Deck (`{slug}-deck.html`)
 
 A standalone HTML presentation with arrow-key navigation. Same file, same browser — no dependencies.
 
@@ -369,7 +385,7 @@ MP3 files are synthesized from the .txt scripts via the `synthesize-audio` recip
 
 ---
 
-## Deliverable 4: Verbose Markdown (content.md)
+## Deliverable 4: Verbose Markdown (`{slug}.md`)
 
 A single markdown file with YAML frontmatter — the AI-consumable and human-readable complete reference document.
 
@@ -410,15 +426,15 @@ The following are removed entirely:
 
 ---
 
-## Deliverable 5: Print-Ready PDF (content.pdf)
+## Deliverable 5: Print-Ready PDF (`{slug}.pdf`)
 
-A professional typeset document generated via WeasyPrint from `content-print.html` + `print.css`.
+A professional typeset document generated via WeasyPrint from `{slug}-print.html` + `print.css`.
 
 ### Technical Requirements
 
 - **Format:** PDF generated via WeasyPrint from intermediate HTML
 - **Purpose:** Professional printed/digital document — textbook quality
-- **Intermediate files:** `content-print.html` (HTML with print-specific classes) + `@education:templates/print.css`
+- **Intermediate files:** `{slug}-print.html` (HTML with print-specific classes) + `@education:templates/print.css`
 - **Prerequisites:** `weasyprint` Python package (`pip install weasyprint`)
 
 ### Typography
@@ -449,14 +465,14 @@ A professional typeset document generated via WeasyPrint from `content-print.htm
 
 ### Content Handling
 
-Same stripping and degradation rules as Deliverable 4 (content.md):
+Same stripping and degradation rules as Deliverable 4 (`{slug}.md`):
 - Stripped: Presentation Slides, Speaker Notes, audio/chat/vignette blocks, source_claims, VC-XX references
 - Degraded: term tooltips → inline + glossary, annotated code → sequential, interactive diagrams → static SVG + description, design decisions → styled callout blocks
 
 ### Build Command
 
 ```bash
-weasyprint --stylesheet print.css content-print.html content.pdf
+weasyprint --stylesheet print.css {slug}-print.html {slug}.pdf
 ```
 
 ---

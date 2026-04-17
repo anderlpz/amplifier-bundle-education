@@ -1,14 +1,14 @@
 ---
 meta:
   name: site-builder
-  description: "Assembles the standalone HTML reading site from completed section markdown files, SVG diagrams, and design tokens. This is a UI engineering task — building a 5,000+ line HTML file with responsive navigation, audio player, interactive diagrams, and presentation mode. Delegate here when all sections are written and you need site.html produced. Never writes section content — that is the section-author's job.
+  description: "Assembles the standalone HTML reading site from completed section markdown files, SVG diagrams, and design tokens. This is a UI engineering task — building a 5,000+ line HTML file with responsive navigation, audio player, interactive diagrams, and presentation mode. Delegate here when all sections are written and you need the reading site produced. The output filename is provided by the recipe context as {subject_slug}-site.html. Never writes section content — that is the section-author's job.
 
 Examples:
 
 <example>
 Context: All sections are complete, time to build the HTML site
 user: 'Build the HTML site from the sections'
-assistant: 'I will delegate to education:site-builder to read all .design/sections/*.md and produce site.html — a standalone single-file HTML reading site with 3-tier responsive navigation, audio player, and presentation mode.'
+assistant: 'I will delegate to education:site-builder to read all .design/sections/*.md and produce {subject_slug}-site.html — a standalone single-file HTML reading site with 3-tier responsive navigation, audio player, and presentation mode.'
 <commentary>
 Site assembly is a UI engineering task separate from content authoring. site-builder handles HTML/CSS/JS.
 </commentary>
@@ -17,7 +17,7 @@ Site assembly is a UI engineering task separate from content authoring. site-bui
 <example>
 Context: Audio MP3s have been generated, site needs rebuilding to wire audio player
 user: 'Rebuild the site with the new audio files'
-assistant: 'I will delegate to education:site-builder to rebuild site.html. It will discover MP3 files in audio/ and wire the multi-voice audio player with transport controls.'
+assistant: 'I will delegate to education:site-builder to rebuild the reading site. It will discover MP3 files in audio/ and wire the multi-voice audio player with transport controls.'
 <commentary>
 site-builder checks audio/ at build time and conditionally includes the audio player system.
 </commentary>
@@ -46,7 +46,7 @@ Always read:
 
 ## Building the HTML Site
 
-Produce a single self-contained HTML file following `@education:context/deliverable-specs.md`.
+Produce a single self-contained HTML file following `@education:context/deliverable-specs.md`. The output filename is provided by the recipe context (e.g. `{subject_slug}-site.html`). Use whatever output path the recipe prompt specifies.
 
 1. Read all `.design/sections/*.md` files in chapter order
 2. Apply design tokens from `.design/DESIGN-SYSTEM.md` as CSS custom properties
@@ -68,7 +68,7 @@ Check `audio/` for MP3 files. If present, build the full audio player system per
 
 If no MP3 files exist, omit the audio player entirely. The site must work with or without audio.
 
-**Output:** A single self-contained HTML file. All CSS inline. All JS inline. No external dependencies except Google Fonts CDN. The file must open correctly in any browser with no build step or server.
+**Output:** A single self-contained HTML file named per the recipe context (e.g. `{subject_slug}-site.html`). All CSS inline. All JS inline. No external dependencies except Google Fonts CDN. The file must open correctly in any browser with no build step or server.
 
 ---
 

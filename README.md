@@ -12,12 +12,14 @@ A reusable Amplifier bundle that turns source content into a complete multi-moda
 
 Point this bundle at a repository or document and it produces:
 
-- **A reading site** (`site.html`) — standalone HTML with sidebar TOC, interactive diagrams, presentation mode, and per-chapter audio player
-- **A presentation deck** (`deck.html`) — standalone HTML with arrow-key navigation, speaker notes, and slide overview
+- **A reading site** (`{slug}-site.html`) — standalone HTML with sidebar TOC, interactive diagrams, presentation mode, and per-chapter audio player
+- **A presentation deck** (`{slug}-deck.html`) — standalone HTML with arrow-key navigation, speaker notes, and slide overview
 - **Audio narration** (`audio/*.txt` + `audio/*.mp3`) — lecture-style voiceover adapted for listening, synthesized via OpenAI TTS
-- **Reference document** (`content.md`) — verbose markdown with full educational content, AI-consumable with rich frontmatter
-- **Print-ready PDF** (`content.pdf`) — professional typeset document via WeasyPrint, textbook quality
+- **Reference document** (`{slug}.md`) — verbose markdown with full educational content, AI-consumable with rich frontmatter
+- **Print-ready PDF** (`{slug}.pdf`) — professional typeset document via WeasyPrint, textbook quality
 - **Visual assets** (`public/diagrams/*.svg`) — code-drawn SVG diagrams built from an art-directed concept
+
+Output filenames use a slug derived from `subject_name` (e.g. `"Design Intelligence for Amplifier"` → `design-intelligence-for-amplifier-site.html`). Multiple editions can coexist in the same directory.
 
 The pipeline runs with one command. It pauses for human review at the visual art direction gate, and optionally at two additional gates during deliverable production (narration review and site design review).
 
@@ -60,7 +62,7 @@ amplifier
 
 # Use agents directly
 > Delegate to education:content-strategist to analyze the reconciliation
-> Use the site-builder to rebuild site.html
+> Use the site-builder to rebuild the reading site
 ```
 
 ---
@@ -116,7 +118,7 @@ Content strategy → Section markdown files
 Concept images → Art direction approval → Production SVGs
     │
     ▼ produce-deliverables.yaml (or produce-deliverables-interactive.yaml)
-audio/*.txt → audio/*.mp3 → site.html (with audio player) → deck.html → content.md → content.pdf
+audio/*.txt → audio/*.mp3 → {slug}-site.html (with audio player) → {slug}-deck.html → {slug}.md → {slug}.pdf
                                 │
                           [interactive only]
                           Gate 1: review scripts before TTS

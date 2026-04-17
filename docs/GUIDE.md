@@ -10,12 +10,14 @@ From a source repository or document, the pipeline produces:
 
 | Deliverable | File | Description |
 |-------------|------|-------------|
-| Reading site | `site.html` | Single-file standalone HTML — open in any browser |
-| Presentation | `deck.html` | Standalone HTML presentation with arrow-key navigation |
+| Reading site | `{slug}-site.html` | Single-file standalone HTML — open in any browser |
+| Presentation | `{slug}-deck.html` | Standalone HTML presentation with arrow-key navigation |
 | Audio scripts | `audio/chNN-*.txt` | Voiceover scripts per chapter (adapted for listening) |
-| Reference document | `content.md` | Verbose markdown with full educational content and rich YAML frontmatter |
-| Print-ready PDF | `content.pdf` | Professional typeset document via WeasyPrint — textbook quality |
+| Reference document | `{slug}.md` | Verbose markdown with full educational content and rich YAML frontmatter |
+| Print-ready PDF | `{slug}.pdf` | Professional typeset document via WeasyPrint — textbook quality |
 | SVG diagrams | `public/diagrams/*.svg` | Code-drawn technical diagrams |
+
+Output filenames use a slug derived from `subject_name` (e.g. `"Design Intelligence for Amplifier"` → `design-intelligence-for-amplifier`). This lets multiple editions coexist in the same directory.
 
 All deliverables are generated from section markdown files in `.design/sections/`. Edit those files and rebuild to get updated deliverables.
 
@@ -49,7 +51,7 @@ amplifier
 
 # 5. Use agents directly
 > Delegate to education:content-strategist to analyze the reconciliation
-> Use the site-builder to rebuild site.html
+> Use the site-builder to rebuild the reading site
 ```
 
 The `full-edition` recipe will pause at the visual art direction gate (Phase 3) for your approval. Everything else runs automatically. Discovery defaults to quick (single-pass). For complex repos, use deep discovery:
@@ -179,10 +181,10 @@ Two variants — choose based on how much control you want:
 
 1. `audio/*.txt` — narration scripts written by `narration-adapter` (adapted for listening, not verbatim)
 2. `audio/*.mp3` — synthesized from scripts via OpenAI TTS (requires `OPENAI_API_KEY` and `ffmpeg`)
-3. `site.html` — built by `site-builder` from all section files, with audio player wired to any MP3s found
-4. `deck.html` — built by `deck-composer` from presentation slide blocks in sections
-5. `content.md` — compiled by `document-compiler` from all sections, with YAML frontmatter and compiled glossary
-6. `content.pdf` — rendered by WeasyPrint from intermediate HTML + print.css (requires `weasyprint`)
+3. `{slug}-site.html` — built by `site-builder` from all section files, with audio player wired to any MP3s found
+4. `{slug}-deck.html` — built by `deck-composer` from presentation slide blocks in sections
+5. `{slug}.md` — compiled by `document-compiler` from all sections, with YAML frontmatter and compiled glossary
+6. `{slug}.pdf` — rendered by WeasyPrint from intermediate HTML + print.css (requires `weasyprint`)
 7. Verification — checks all expected outputs exist and are well-formed
 
 Audio is produced first so the site builder can discover which MP3 files exist and wire the audio player (AUDIO_FILES map, nav pill, per-chapter TOC buttons, scroll sync, auto-advance).
@@ -190,7 +192,7 @@ Audio is produced first so the site builder can discover which MP3 files exist a
 **Interactive mode** pauses at two gates:
 
 - **Gate 1 (after narration scripts, before TTS):** Review scripts in `audio/*.txt` before spending on TTS API calls. The gate shows word counts, estimated duration, and estimated cost. Approve to proceed, deny to revise scripts first.
-- **Gate 2 (after site build, before deck):** A design-intelligence agent reviews `site.html` against the Paper Frame tokens, typography stack, layout constraints, and audio player contract. The gate shows the design review findings. Approve to build the deck (your feedback is passed to the deck builder via `{{_approval_message}}`), deny to revise the site first.
+- **Gate 2 (after site build, before deck):** A design-intelligence agent reviews `{slug}-site.html` against the Paper Frame tokens, typography stack, layout constraints, and audio player contract. The gate shows the design review findings. Approve to build the deck (your feedback is passed to the deck builder via `{{_approval_message}}`), deny to revise the site first.
 
 ```bash
 # Interactive — pauses for review at two gates
@@ -311,7 +313,7 @@ amplifier delegate education:content-strategist "Analyze the reconciliation and 
 amplifier delegate education:section-author "Write section 7 — Tools vs Hooks, following the content strategy"
 
 # Build just the site
-amplifier delegate education:section-author "Build site.html from the completed sections in .design/sections/"
+amplifier delegate education:site-builder "Build the reading site from the completed sections in .design/sections/"
 
 # Generate concepts for a specific diagram
 amplifier delegate education:visual-director "Generate concept images for FIG-04a — the kernel components diagram"
@@ -353,11 +355,12 @@ project/
 ├── audio/
 │   ├── ch01-intro.txt           ← voiceover scripts
 │   ├── ch01-intro.mp3           ← synthesized audio (TTS)
+│   ├── fable/ch01-intro.mp3     ← per-voice renders
 │   └── ...
-├── site.html                    ← finished reading site
-├── deck.html                    ← finished presentation
-├── content.md                   ← verbose markdown reference (AI-consumable)
-└── content.pdf                  ← print-ready PDF (textbook quality)
+├── {slug}-site.html             ← finished reading site
+├── {slug}-deck.html             ← finished presentation
+├── {slug}.md                    ← verbose markdown reference (AI-consumable)
+└── {slug}.pdf                   ← print-ready PDF (textbook quality)
 ```
 
 ---
