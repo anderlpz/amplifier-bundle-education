@@ -15,6 +15,8 @@ Point this bundle at a repository or document and it produces:
 - **A reading site** (`site.html`) — standalone HTML with sidebar TOC, interactive diagrams, presentation mode, and per-chapter audio player
 - **A presentation deck** (`deck.html`) — standalone HTML with arrow-key navigation, speaker notes, and slide overview
 - **Audio narration** (`audio/*.txt` + `audio/*.mp3`) — lecture-style voiceover adapted for listening, synthesized via OpenAI TTS
+- **Reference document** (`content.md`) — verbose markdown with full educational content, AI-consumable with rich frontmatter
+- **Print-ready PDF** (`content.pdf`) — professional typeset document via WeasyPrint, textbook quality
 - **Visual assets** (`public/diagrams/*.svg`) — code-drawn SVG diagrams built from an art-directed concept
 
 The pipeline runs with one command. It pauses for human review at the visual art direction gate, and optionally at two additional gates during deliverable production (narration review and site design review).
@@ -75,6 +77,9 @@ amplifier
 - **ffmpeg** — `brew install ffmpeg` (macOS) or `apt install ffmpeg` (Linux)
 - **openai Python package** — `pip install openai` or `uv add openai`
 
+**Required for PDF generation:**
+- **weasyprint** Python package — `pip install weasyprint` or `uv add weasyprint`
+
 **Optional:**
 - **`design-intelligence-enhanced` bundle** — used by the interactive recipe's design review gate. Not required for the flat/autonomous pipeline.
 
@@ -111,7 +116,7 @@ Content strategy → Section markdown files
 Concept images → Art direction approval → Production SVGs
     │
     ▼ produce-deliverables.yaml (or produce-deliverables-interactive.yaml)
-audio/*.txt → audio/*.mp3 → site.html (with audio player) → deck.html
+audio/*.txt → audio/*.mp3 → site.html (with audio player) → deck.html → content.md → content.pdf
                                 │
                           [interactive only]
                           Gate 1: review scripts before TTS
@@ -145,6 +150,7 @@ The flat version is what `full-edition.yaml` calls. The interactive version is i
 | `asset-builder` | Production SVG diagrams |
 | `deck-composer` | Presentation slides + speaker notes |
 | `narration-adapter` | Voiceover scripts (adapted for listening) |
+| `document-compiler` | Verbose markdown reference + print-ready HTML/PDF |
 | `edition-manager` | Change detection, update planning, edition bookkeeping |
 
 ---

@@ -369,6 +369,98 @@ MP3 files are synthesized from the .txt scripts via the `synthesize-audio` recip
 
 ---
 
+## Deliverable 4: Verbose Markdown (content.md)
+
+A single markdown file with YAML frontmatter — the AI-consumable and human-readable complete reference document.
+
+### Technical Requirements
+
+- **Format:** Single markdown file with YAML frontmatter
+- **Purpose:** AI-consumable and human-readable complete reference document
+- **Contains:** ALL educational prose content from all chapters — nothing summarized, nothing omitted
+
+### Frontmatter
+
+YAML frontmatter includes:
+- **title** — subject name + "Complete Reference"
+- **edition** — from `.edition/manifest.json` if available
+- **date** — compilation date
+- **subject** — subject name from content strategy
+- **chapters** — array with: number, title, slug, word_count, depends_on, diagrams
+- **glossary** — compiled from all sections' term_defs, deduplicated and sorted
+
+### Content Rules
+
+- Every diagram gets a **verbal description paragraph** (for readers without image support or for AI consumption)
+- **Term definitions** appear inline as parenthetical on first use per chapter AND in per-chapter glossary sections at end of each chapter
+- **Design Decisions** preserved as blockquote with `> **DESIGN DECISION:**` label + verdict + reasoning
+- **Annotated code** degraded to sequential layout: code block first, numbered annotation list below
+- **Interactive diagrams** degraded to static SVG file reference + verbal description paragraph
+
+### Stripped Content
+
+The following are removed entirely:
+- Presentation Slides sections (`## Presentation Slides`)
+- Speaker Notes sections (`## Speaker Notes`)
+- Audio blocks (`type: audio`)
+- Chat blocks (`type: chat`)
+- Vignette blocks (`type: vignette`)
+- `source_claims` frontmatter field
+- `VC-XX` references in prose
+
+---
+
+## Deliverable 5: Print-Ready PDF (content.pdf)
+
+A professional typeset document generated via WeasyPrint from `content-print.html` + `print.css`.
+
+### Technical Requirements
+
+- **Format:** PDF generated via WeasyPrint from intermediate HTML
+- **Purpose:** Professional printed/digital document — textbook quality
+- **Intermediate files:** `content-print.html` (HTML with print-specific classes) + `@education:templates/print.css`
+- **Prerequisites:** `weasyprint` Python package (`pip install weasyprint`)
+
+### Typography
+
+| Element | Font | Size | Notes |
+|---------|------|------|-------|
+| Body text | Source Serif 4 | 10.5pt / 14pt leading | Serif for sustained reading |
+| Headings | Source Serif 4 | 24pt (h1), 16pt (h2), 13pt (h3) | Same family, weight differentiation |
+| Labels, captions | Inter | 8pt | Sans-serif for UI-like elements |
+| Code | JetBrains Mono | 8.5pt / 11pt leading | Monospace with good legibility at small sizes |
+| Running headers | Inter | 8pt | Muted gray (#8B8D9C) |
+
+### Page Layout
+
+- **Page size:** US Letter (8.5" × 11")
+- **Margins:** 1" top, 1.15" left/right, 1.25" bottom
+- **Text block:** ~6.2" wide (~65-75 characters per line at 10.5pt)
+- **Running headers:** chapter title (top center), document title (bottom left), page number (bottom right)
+- **Chapter opener:** suppresses running header at top
+
+### Structure
+
+- Each chapter starts on a new page (`break-before: page`)
+- Auto-generated **table of contents** with dot leaders and page numbers
+- SVG diagrams **inlined natively** (Cairo rendering, no rasterization)
+- Primarily grayscale with semantic color preserved in diagrams and design decision callouts
+- Wide/breakout diagrams extend into margins (`margin-left: -1in; margin-right: -1in`)
+
+### Content Handling
+
+Same stripping and degradation rules as Deliverable 4 (content.md):
+- Stripped: Presentation Slides, Speaker Notes, audio/chat/vignette blocks, source_claims, VC-XX references
+- Degraded: term tooltips → inline + glossary, annotated code → sequential, interactive diagrams → static SVG + description, design decisions → styled callout blocks
+
+### Build Command
+
+```bash
+weasyprint --stylesheet print.css content-print.html content.pdf
+```
+
+---
+
 ## Bonus Deliverable: Astro Site (Optional)
 
 For projects that need a production-deployable site (not just a standalone HTML file), the pipeline can additionally produce a componentized Astro site. This is an optional Phase 5 not included in the standard recipes.

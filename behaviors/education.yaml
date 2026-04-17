@@ -13,6 +13,7 @@ agents:
     - education:agents/deck-composer
     - education:agents/narration-adapter
     - education:agents/edition-manager
+    - education:agents/document-compiler
 
 context:
   include:

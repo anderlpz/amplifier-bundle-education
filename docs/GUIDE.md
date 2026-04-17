@@ -13,6 +13,8 @@ From a source repository or document, the pipeline produces:
 | Reading site | `site.html` | Single-file standalone HTML — open in any browser |
 | Presentation | `deck.html` | Standalone HTML presentation with arrow-key navigation |
 | Audio scripts | `audio/chNN-*.txt` | Voiceover scripts per chapter (adapted for listening) |
+| Reference document | `content.md` | Verbose markdown with full educational content and rich YAML frontmatter |
+| Print-ready PDF | `content.pdf` | Professional typeset document via WeasyPrint — textbook quality |
 | SVG diagrams | `public/diagrams/*.svg` | Code-drawn technical diagrams |
 
 All deliverables are generated from section markdown files in `.design/sections/`. Edit those files and rebuild to get updated deliverables.
@@ -72,6 +74,9 @@ amplifier run "execute education:recipes/full-edition.yaml with source_repo=/pat
   - Ubuntu/Debian: `sudo apt install ffmpeg`
   - Fedora: `sudo dnf install ffmpeg`
 - **openai Python package** — `pip install openai` or `uv add openai`
+
+**Required for PDF generation:**
+- **weasyprint** Python package — `pip install weasyprint` or `uv add weasyprint`. Generates `content.pdf` from the intermediate HTML via Cairo-based rendering.
 
 **Optional:**
 - **`design-intelligence-enhanced` bundle** — used by the interactive recipe's design review gate (Gate 2). Not required for the flat/autonomous pipeline.
@@ -174,9 +179,11 @@ Two variants — choose based on how much control you want:
 
 1. `audio/*.txt` — narration scripts written by `narration-adapter` (adapted for listening, not verbatim)
 2. `audio/*.mp3` — synthesized from scripts via OpenAI TTS (requires `OPENAI_API_KEY` and `ffmpeg`)
-3. `site.html` — built by `section-author` from all section files, with audio player wired to any MP3s found
+3. `site.html` — built by `site-builder` from all section files, with audio player wired to any MP3s found
 4. `deck.html` — built by `deck-composer` from presentation slide blocks in sections
-5. Verification — checks all expected outputs exist and are well-formed
+5. `content.md` — compiled by `document-compiler` from all sections, with YAML frontmatter and compiled glossary
+6. `content.pdf` — rendered by WeasyPrint from intermediate HTML + print.css (requires `weasyprint`)
+7. Verification — checks all expected outputs exist and are well-formed
 
 Audio is produced first so the site builder can discover which MP3 files exist and wire the audio player (AUDIO_FILES map, nav pill, per-chapter TOC buttons, scroll sync, auto-advance).
 
@@ -348,7 +355,9 @@ project/
 │   ├── ch01-intro.mp3           ← synthesized audio (TTS)
 │   └── ...
 ├── site.html                    ← finished reading site
-└── deck.html                    ← finished presentation
+├── deck.html                    ← finished presentation
+├── content.md                   ← verbose markdown reference (AI-consumable)
+└── content.pdf                  ← print-ready PDF (textbook quality)
 ```
 
 ---

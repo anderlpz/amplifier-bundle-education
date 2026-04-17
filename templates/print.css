@@ -1,0 +1,266 @@
+/* ==========================================================================
+   Education Bundle — Print Stylesheet for WeasyPrint
+   Produces textbook-quality PDF from content-print.html
+   ========================================================================== */
+
+/* Page setup */
+@page {
+  size: letter;
+  margin: 1in 1.15in 1.25in 1.15in;
+
+  @top-center {
+    content: string(chapter-title);
+    font-family: 'Inter', sans-serif;
+    font-size: 8pt;
+    color: #8B8D9C;
+  }
+
+  @bottom-right {
+    content: counter(page);
+    font-family: 'Inter', sans-serif;
+    font-size: 8pt;
+    color: #8B8D9C;
+  }
+
+  @bottom-left {
+    content: string(document-title);
+    font-family: 'Inter', sans-serif;
+    font-size: 8pt;
+    color: #8B8D9C;
+  }
+}
+
+@page chapter-opener {
+  @top-center { content: none; }
+}
+
+/* Font embedding */
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('https://fonts.gstatic.com/s/sourceserif4/v8/vEFy2_tTDB4M7-auWDN0ahZJW3IX2ih5nk3AucvUHf64.woff2') format('woff2');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('https://fonts.gstatic.com/s/sourceserif4/v8/vEFy2_tTDB4M7-auWDN0ahZJW3IX2ih5nk3AucvUHf64.woff2') format('woff2');
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjQ.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjPVmUsaaDhw.woff2') format('woff2');
+}
+
+/* Base typography */
+body {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 10.5pt;
+  line-height: 14pt;
+  color: #1C1E2B;
+  orphans: 3;
+  widows: 3;
+}
+
+/* Heading hierarchy */
+h1 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 24pt;
+  line-height: 28pt;
+  font-weight: bold;
+  margin-top: 0;
+  margin-bottom: 12pt;
+}
+
+h2 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 16pt;
+  line-height: 20pt;
+  font-weight: 600;
+  margin-top: 24pt;
+  margin-bottom: 8pt;
+}
+
+h3 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 13pt;
+  line-height: 16pt;
+  font-weight: 600;
+  margin-top: 18pt;
+  margin-bottom: 6pt;
+}
+
+/* Chapter structure */
+.chapter {
+  break-before: page;
+  page: chapter-opener;
+}
+
+.chapter-number {
+  font-size: 36pt;
+  font-weight: 300;
+  color: #8B8D9C;
+  margin-bottom: 4pt;
+  string-set: chapter-title attr(data-title);
+}
+
+.document-title {
+  string-set: document-title content();
+}
+
+/* Code blocks */
+pre, code {
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 8.5pt;
+  line-height: 11pt;
+}
+
+pre {
+  background: #F4F5F9;
+  padding: 8pt 10pt;
+  border-radius: 3pt;
+  break-inside: avoid;
+  overflow-wrap: break-word;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  line-height: 12pt;
+  margin: 12pt 0;
+}
+
+th {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 1.5pt solid #D8D9E3;
+  padding: 4pt 8pt;
+}
+
+td {
+  border-bottom: 0.5pt solid #E8E9EF;
+  padding: 4pt 8pt;
+}
+
+/* Captions and labels */
+figcaption, .caption, .label {
+  font-family: 'Inter', sans-serif;
+  font-size: 8pt;
+  line-height: 10pt;
+  color: #5C5E6E;
+}
+
+/* Diagrams */
+figure.diagram {
+  margin: 16pt 0;
+  break-inside: avoid;
+}
+
+figure.diagram svg {
+  max-width: 100%;
+  height: auto;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* Wide breakout for diagrams */
+figure.diagram.breakout {
+  margin-left: -1in;
+  margin-right: -1in;
+  max-width: calc(100% + 2in);
+}
+
+/* Design Decision callouts */
+.design-decision {
+  border-left: 3pt solid #8A5A4A;
+  background: #F2EAE6;
+  padding: 8pt 12pt;
+  margin: 12pt 0;
+  border-radius: 0 3pt 3pt 0;
+  break-inside: avoid;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.design-decision .label {
+  font-family: 'Inter', sans-serif;
+  font-size: 7pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+  color: #8A5A4A;
+  margin-bottom: 4pt;
+}
+
+/* Annotated code — sequential layout for print */
+.annotated-code {
+  break-inside: avoid;
+}
+
+.annotation-list {
+  font-size: 9pt;
+  line-height: 12pt;
+  margin-top: 4pt;
+  padding-left: 20pt;
+}
+
+.annotation-list li {
+  margin-bottom: 4pt;
+}
+
+/* Glossary */
+.glossary-table th {
+  font-size: 8pt;
+}
+
+.glossary-table td {
+  font-size: 8.5pt;
+}
+
+/* TOC */
+.toc {
+  break-after: page;
+}
+
+.toc-entry {
+  display: block;
+  margin: 3pt 0;
+  font-size: 10pt;
+}
+
+.toc-entry a {
+  color: #1C1E2B;
+  text-decoration: none;
+}
+
+.toc-entry a::after {
+  content: leader('.') target-counter(attr(href), page);
+}
+
+.toc-entry.chapter-entry {
+  font-weight: 600;
+  margin-top: 8pt;
+}
+
+/* Links — show as colored text since they can't be clicked */
+a {
+  color: #3E5C8A;
+  text-decoration: none;
+}
+
+/* Semantic layer colors — preserved for diagrams */
+.layer-kernel { color: #9B7B3E; }
+.layer-modules { color: #3E7D8A; }
+.layer-bundles { color: #5C6B9E; }
+.layer-foundation { color: #5A7D5A; }
+.layer-boundary { color: #8A5A4A; }
+.layer-apps { color: #7B6B8A; }
+.layer-ecosystem { color: #8A7B8A; }

@@ -204,6 +204,40 @@ stages:
 
           {{_approval_message}}
 
+      - id: compile-document
+        type: agent
+        agent: education:agents/document-compiler
+        prompt: >
+          Compile the verbose markdown reference and print-ready HTML.
+
+          Read all sections in {{sections_dir}} in chapter order.
+          Read @education:context/deliverable-specs.md for Deliverable 4 and 5 specs.
+          Read @education:context/content-model.md for block type handling.
+          Read .design/DESIGN-SYSTEM.md for design tokens.
+
+          Produce:
+          - {{output_dir}}/content.md  (Deliverable 4: verbose markdown)
+          - {{output_dir}}/content-print.html  (intermediate HTML for PDF)
+
+          Strip all delivery-format blocks (slides, speaker notes, audio, chat, vignette).
+          Degrade interactive components per the deliverable spec.
+          Build YAML frontmatter with chapter index and compiled glossary.
+          Include verbal descriptions of all diagrams.
+
+      - id: render-pdf
+        type: agent
+        agent: foundation:explorer
+        prompt: >
+          Generate the print-ready PDF from the intermediate HTML.
+
+          Run this command:
+            weasyprint --stylesheet @education:templates/print.css {{output_dir}}/content-print.html {{output_dir}}/content.pdf
+
+          If weasyprint is not installed, report:
+            "weasyprint is required for PDF generation. Install with: pip install weasyprint"
+
+          Verify the PDF was created and report its page count and file size.
+
       - id: verify-deliverables
         type: agent
         agent: foundation:explorer
@@ -213,6 +247,8 @@ stages:
           Check that these files exist:
           - {{output_dir}}/site.html
           - {{output_dir}}/deck.html
+          - {{output_dir}}/content.md
+          - {{output_dir}}/content.pdf
           - audio/*.txt (one per chapter)
           - audio/*.mp3 (one per chapter)
 
@@ -222,6 +258,13 @@ stages:
           - Has presentation mode controls
           - If MP3 files exist: has the AUDIO_FILES map, nav bar audio pill,
             per-chapter TOC play buttons, and the shared <audio> element
+
+          Check that content.md:
+          - Has YAML frontmatter with title, edition, date, subject, chapters, glossary
+          - Contains all chapters in order
+          - Has no VC-XX references or Presentation Slides sections
+
+          Check that content.pdf exists and has a reasonable file size.
 
           Check that each .txt script has a corresponding .mp3 file.
 
