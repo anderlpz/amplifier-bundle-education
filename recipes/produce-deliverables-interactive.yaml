@@ -20,39 +20,77 @@ context:
   assets_dir: "public/diagrams"      # Input: generated SVG assets
   output_dir: "."                    # Where to write deliverables
   subject_name: ""                   # For HTML title and meta tags
-  subject_slug: ""                   # URL-safe slug derived from subject_name (e.g. "design-intelligence-for-amplifier")
+  subject_slug: ""                   # URL-safe slug derived from subject_name
   tts_model: "tts-1-hd"             # OpenAI TTS model
   tts_voices: '["fable", "nova", "alloy"]'   # TTS voices to synthesize
   tts_speed: 0.95                    # Slightly slower for comprehension
+  parallel_batch_size: "6"           # Max parallel narration-adapter delegations per turn
 
 stages:
-  # ── Stage 1: Write narration scripts ─────────────────────────────────────────
+  # ── Stage 1: Write narration scripts ────────────────────────────────────
   # Produces audio/*.txt — cheap to generate, expensive to synthesize.
   # Gate pauses here so you can review voice, pacing, and coverage before
   # committing to TTS API spend.
   - name: narration
     steps:
+      # NOTE: Prior versions of this step used
+      #   `foreach: "{{sections_dir}}"`
+      # with a body referencing `item.chapter_title`, `item.section_filename`,
+      # `item.asset_ref`, and `item.target_minutes`. `sections_dir` is a
+      # directory path (a string), not an iterable of structured section
+      # items, so the engine cannot fan out this loop. This step replaces
+      # that pattern with a single non-foreach agent step that enumerates
+      # section files and fans out to `narration-adapter` in parallel
+      # batches. The step is IDEMPOTENT and RESUMABLE — re-running skips
+      # sections whose audio/<basename>.txt already exists.
       - id: write-scripts
-        foreach: "{{sections_dir}}"
-        as: item
         type: agent
-        agent: education:agents/narration-adapter
+        agent: foundation:zen-architect
         prompt: >
-          Write the voiceover script for: {{item.chapter_title}}
+          Write voiceover scripts for every section in {{sections_dir}}.
 
-          Read the section content at {{sections_dir}}/{{item.section_filename}}.
-          Follow the voice guidelines in .design/CONTENT-STRATEGY.md.
-          Read @education:context/deliverable-specs.md Deliverable 3 specification.
+          This step is RESUMABLE and may be run multiple times until every
+          audio/<chapter-basename>.txt exists. You MUST stop well before
+          the 600s per-step timeout — aim for a ~480s (8-min) working budget.
 
-          Produce: audio/{{item.asset_ref}}.txt
+          Subject: {{subject_name}}
+          Sections dir: {{sections_dir}}
+          Parallel batch size: {{parallel_batch_size}}
 
-          The script must:
-          - Be adapted for listening (not a verbatim reading)
-          - Replace visual references with verbal descriptions
-          - Use natural paragraph breaks for pacing (no [pause] markers)
-          - Be clean prose with no production markers of any kind
-          - Be approximately {{item.target_minutes}} minutes when spoken at normal pace
-        collect: results
+          Procedure:
+          1. Ensure audio/ exists.
+          2. LIST every *.md file in {{sections_dir}}. For each section
+             file <basename>.md, the expected script output is
+             audio/<basename>.txt.
+          3. SKIP any section whose audio/<basename>.txt already exists
+             and is non-empty.
+          4. For each remaining section, take up to
+             {{parallel_batch_size}} at a time and dispatch IN A SINGLE
+             MESSAGE with parallel delegate calls to
+             education:agents/narration-adapter. Each delegation must
+             include:
+               - Subject: {{subject_name}}
+               - Section content path: {{sections_dir}}/<basename>.md
+               - Content strategy path: .design/CONTENT-STRATEGY.md
+               - Voice guidelines: read from CONTENT-STRATEGY.md
+               - Deliverable spec: @education:context/deliverable-specs.md
+                 (Deliverable 3 — narration adapter)
+               - Target output path: audio/<basename>.txt
+               - Requirements: adapted for listening (not verbatim
+                 reading), replace visual references with verbal
+                 descriptions, use natural paragraph breaks for pacing
+                 (no [pause] markers), clean prose with no production
+                 markers of any kind.
+          5. After the first batch returns, IF you estimate more batches
+             will fit inside a 480s working budget, dispatch another
+             parallel batch. Otherwise STOP.
+          6. Do NOT write scripts yourself. Every script must come from
+             a narration-adapter delegation.
+          7. Return a structured summary:
+               - completed_this_run: [list of basenames]
+               - still_missing: [list of basenames]
+               - total_expected: N
+               - total_present_now: M
 
       - id: script-summary
         type: agent
@@ -89,14 +127,15 @@ stages:
       timeout: 0
       default: deny
 
-  # ── Stage 2: Synthesize audio + build site + design review ───────────────────
+  # ── Stage 2: Synthesize audio + build site + design review ─────────────
   # TTS runs first, then site is built with the audio player wired to the MP3s.
   # Design-intelligence reviews the site before the gate pauses.
   - name: production
     steps:
+      # NOTE: `recipe:` values MUST be quoted — YAML cannot start a token with `@`.
       - id: synthesize-audio
         type: recipe
-        recipe: @education:recipes/synthesize-audio.yaml
+        recipe: "@education:recipes/synthesize-audio.yaml"
         context:
           audio_dir: "audio"
           tts_model: "{{tts_model}}"
@@ -175,14 +214,23 @@ stages:
         Approve to build the presentation deck.
         Deny to stop and revise the site.
 
-        Your feedback (if any) will be passed to the deck builder.
+        If you have feedback to pass to the deck builder, write it to
+        .design/APPROVAL-NOTE-deck.md before approving.
       timeout: 0
       default: deny
 
-  # ── Stage 3: Build deck + verify ────────────────────────────────────────────
+  # ── Stage 3: Build deck + verify ─────────────────────────────────────
   # No gate — this is the final stage.
   - name: finalize
     steps:
+      # NOTE: The prompt below deliberately does NOT reference
+      # `{{_approval_message}}`. The recipe engine validates all
+      # `{{name}}` references at load time against the context /
+      # declared outputs; there is no runtime-reserved name for the
+      # approval message, so any such reference makes the recipe
+      # unloadable. We use a file-based convention instead: reviewer
+      # writes to .design/APPROVAL-NOTE-deck.md; the step below
+      # reads that file if present.
       - id: build-deck
         type: agent
         agent: education:agents/deck-composer
@@ -203,7 +251,8 @@ stages:
           - Full presentation keyboard controls (F for fullscreen, G+number for go-to)
           - Same design tokens as the reading site (per DESIGN-SYSTEM.md variant)
 
-          {{_approval_message}}
+          If a reviewer wrote a note at .design/APPROVAL-NOTE-deck.md,
+          read it for additional guidance before building.
 
       - id: compile-document
         type: agent

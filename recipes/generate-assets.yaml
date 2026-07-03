@@ -8,9 +8,10 @@ description: >
   This recipe uses staged execution to ensure human judgment is applied to visual direction.
 
 context:
-  sections_dir: ".design/sections"   # Input: where section markdown files are
-  aesthetic_ref: ""                  # Optional: art direction reference or URL
+  sections_dir: ".design/sections"                # Input: where section markdown files are
+  aesthetic_ref: ""                               # Optional: art direction reference or URL
   design_system_path: ".design/DESIGN-SYSTEM.md"  # Optional: existing design system
+  parallel_batch_size: "6"                        # Max parallel asset-builder delegations per turn
 
 stages:
   - name: art-direction
@@ -68,18 +69,32 @@ stages:
         Approve to proceed with asset production using the visual director's recommended direction.
         Or provide guidance: specify which concept numbers to build from, or describe adjustments.
 
-        Your feedback is available to the asset-builder as {{_approval_message}}.
+        If you have adjustments beyond the visual director's recommendation, write them to
+        .design/concepts/APPROVAL-NOTE.md before approving. The next step will read that file
+        for guidance if present.
 
   - name: asset-production
     description: "Asset builder produces production SVGs from approved direction"
     steps:
+      # NOTE: The prompt below deliberately does NOT reference a
+      # `{{_approval_message}}` template variable. The recipe engine
+      # validates all `{{name}}` references at load time against the
+      # context / declared outputs; there is no runtime-reserved name
+      # for the approval message, so any such reference makes the
+      # recipe unloadable. We use a file-based convention instead:
+      # reviewer writes to .design/concepts/APPROVAL-NOTE.md; the
+      # step below reads that file if present.
       - id: finalize-aesthetic
         type: agent
         agent: education:agents/visual-director
         prompt: >
-          The concept direction has been approved. Approval message: {{_approval_message}}
+          The concept direction has been approved.
 
-          Based on the approved concepts and any feedback in the approval message:
+          If a reviewer wrote a note at .design/concepts/APPROVAL-NOTE.md,
+          read it for guidance. Otherwise proceed with the direction the
+          visual director recommended in .design/concepts/CONCEPTS-SUMMARY.md.
+
+          Based on the approved concepts and any feedback in the approval note file:
           1. Extract the definitive style specifications from the approved concepts
           2. Update .design/AESTHETIC-GUIDE.md with production-ready tokens:
              - Final color values
@@ -87,24 +102,69 @@ stages:
              - Shape vocabulary
              - Layout principles
              - Per-diagram specifications
-          3. Update .design/VISUAL-STRATEGY.md with final asset manifest and statuses
+          3. Update .design/VISUAL-STRATEGY.md with the final asset manifest
+             and per-asset statuses. The manifest MUST list every pending
+             asset with:
+               - asset_id
+               - section_title
+               - per-diagram specification reference
 
           The aesthetic guide is now the production brief for asset-builder.
 
+      # NOTE: Prior versions of this step used
+      #   `foreach: "{{finalize-aesthetic.pending_assets}}"`
+      # but the previous `type: agent` step has no output contract that
+      # produces a bound `pending_assets` variable, so the recipe engine
+      # rejects the foreach with "Invalid foreach syntax". This step
+      # replaces that pattern with a single non-foreach agent step that
+      # reads the aesthetic guide and visual strategy manifest, and fans
+      # out to `asset-builder` in parallel batches. The step is
+      # IDEMPOTENT and RESUMABLE — re-running skips assets whose SVG is
+      # already on disk, so multiple invocations progressively fill the
+      # diagrams directory if the 600s per-step timeout is reached before
+      # completion.
       - id: build-assets
-        foreach: "{{finalize-aesthetic.pending_assets}}"
-        as: item
         type: agent
-        agent: education:agents/asset-builder
+        agent: foundation:zen-architect
         prompt: >
-          Build the SVG diagram for: {{item.asset_id}}
+          Read .design/AESTHETIC-GUIDE.md and .design/VISUAL-STRATEGY.md.
+          Build every pending SVG diagram listed in the visual strategy manifest
+          into public/diagrams/{asset_id}.svg.
 
-          Read .design/AESTHETIC-GUIDE.md for the definitive style specs.
-          Read the per-diagram specification for {{item.asset_id}} in the aesthetic guide.
-          Read the section content for {{item.section_title}} to understand what to show.
+          This step is RESUMABLE and may be run multiple times until every
+          pending asset is present. You MUST stop well before the 600s
+          per-step timeout — aim for a ~480s (8-min) working budget.
 
-          Produce: public/diagrams/{{item.asset_id}}.svg
+          Sections dir: {{sections_dir}}
+          Parallel batch size: {{parallel_batch_size}}
 
-          After writing, note the file was produced and update
-          .design/VISUAL-STRATEGY.md status for {{item.asset_id}} to "complete".
-        collect: results
+          Procedure:
+          1. Read .design/VISUAL-STRATEGY.md and enumerate every asset row
+             with status != "complete". Capture: asset_id, section title,
+             per-diagram specification reference (heading in the aesthetic
+             guide), target path public/diagrams/{asset_id}.svg.
+          2. Ensure public/diagrams/ exists.
+          3. LIST existing files in public/diagrams/. Skip any
+             {asset_id}.svg that already exists AND is non-empty.
+          4. For each remaining asset take up to {{parallel_batch_size}}
+             at a time and dispatch IN A SINGLE MESSAGE with parallel
+             delegate calls to education:agents/asset-builder. Each
+             delegation must include:
+               - Asset ID: {asset_id}
+               - Aesthetic guide path: .design/AESTHETIC-GUIDE.md
+               - Per-diagram spec pointer (heading in aesthetic guide)
+               - Section content path: {{sections_dir}}/<matching section file>
+               - Target output path: public/diagrams/{asset_id}.svg
+               - Requirement: production-ready SVG per the aesthetic guide.
+                 After writing, update .design/VISUAL-STRATEGY.md status
+                 for {asset_id} to "complete".
+          5. After the first batch returns, IF you estimate more batches
+             will fit inside a 480s working budget, dispatch another
+             parallel batch. Otherwise STOP.
+          6. Do NOT write SVGs yourself. Every asset must come from an
+             asset-builder delegation.
+          7. Return a structured summary:
+               - completed_this_run: [list of asset_ids]
+               - still_pending: [list of asset_ids]
+               - total_in_manifest: N
+               - total_complete_now: M

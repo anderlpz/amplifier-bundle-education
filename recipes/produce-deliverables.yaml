@@ -17,40 +17,77 @@ context:
   assets_dir: "public/diagrams"      # Input: generated SVG assets
   output_dir: "."                    # Where to write deliverables
   subject_name: ""                   # For HTML title and meta tags
-  subject_slug: ""                   # URL-safe slug derived from subject_name (e.g. "design-intelligence-for-amplifier")
+  subject_slug: ""                   # URL-safe slug derived from subject_name
   produce_audio: true                # Whether to produce narration scripts + MP3s
   tts_model: "tts-1-hd"             # OpenAI TTS model
   tts_voices: '["fable", "nova", "alloy"]'   # TTS voices to synthesize
   tts_speed: 0.95                    # Slightly slower for comprehension
+  parallel_batch_size: "6"           # Max parallel narration-adapter delegations per turn
 
 steps:
+  # NOTE: Prior versions of this step used
+  #   `foreach: "{{sections_dir}}"`
+  # with a body that referenced `item.chapter_title`, `item.section_filename`,
+  # `item.asset_ref`, and `item.target_minutes`. `sections_dir` is a directory
+  # path (a string), not an iterable of structured section items, so the
+  # engine cannot fan out this loop. This step replaces that pattern with a
+  # single non-foreach agent step that enumerates section files and fans out
+  # to `narration-adapter` in parallel batches. The step is IDEMPOTENT and
+  # RESUMABLE — re-running skips sections whose audio/<basename>.txt already
+  # exists, so multiple invocations progressively fill the audio directory
+  # if the 600s per-step timeout is reached before completion.
   - id: build-narration
     condition: "{{produce_audio}}"
-    foreach: "{{sections_dir}}"
-    as: item
     type: agent
-    agent: education:agents/narration-adapter
+    agent: foundation:zen-architect
     prompt: >
-      Write the voiceover script for: {{item.chapter_title}}
+      Write voiceover scripts for every section in {{sections_dir}}.
 
-      Read the section content at {{sections_dir}}/{{item.section_filename}}.
-      Follow the voice guidelines in .design/CONTENT-STRATEGY.md.
-      Read @education:context/deliverable-specs.md Deliverable 3 specification.
+      This step is RESUMABLE and may be run multiple times until every
+      audio/<chapter-basename>.txt exists. You MUST stop well before the
+      600s per-step timeout — aim for a ~480s (8-min) working budget.
 
-      Produce: audio/{{item.asset_ref}}.txt
+      Subject: {{subject_name}}
+      Sections dir: {{sections_dir}}
+      Parallel batch size: {{parallel_batch_size}}
 
-      The script must:
-      - Be adapted for listening (not a verbatim reading)
-      - Replace visual references with verbal descriptions
-      - Use natural paragraph breaks for pacing (no [pause] markers)
-      - Be clean prose with no production markers of any kind
-      - Be approximately {{item.target_minutes}} minutes when spoken at normal pace
-    collect: results
+      Procedure:
+      1. Ensure audio/ exists.
+      2. LIST every *.md file in {{sections_dir}}. For each section file
+         <basename>.md, the expected script output is audio/<basename>.txt.
+      3. SKIP any section whose audio/<basename>.txt already exists and
+         is non-empty.
+      4. For each remaining section, take up to {{parallel_batch_size}}
+         at a time and dispatch IN A SINGLE MESSAGE with parallel delegate
+         calls to education:agents/narration-adapter. Each delegation
+         must include:
+           - Subject: {{subject_name}}
+           - Section content path: {{sections_dir}}/<basename>.md
+           - Content strategy path: .design/CONTENT-STRATEGY.md
+           - Voice guidelines: read from CONTENT-STRATEGY.md
+           - Deliverable spec: @education:context/deliverable-specs.md
+             (Deliverable 3 — narration adapter)
+           - Target output path: audio/<basename>.txt
+           - Requirements: adapted for listening (not verbatim reading),
+             replace visual references with verbal descriptions, use
+             natural paragraph breaks for pacing (no [pause] markers),
+             clean prose with no production markers of any kind.
+      5. After the first batch returns, IF you estimate more batches will
+         fit inside a 480s working budget, dispatch another parallel batch.
+         Otherwise STOP.
+      6. Do NOT write scripts yourself. Every script must come from a
+         narration-adapter delegation.
+      7. Return a structured summary:
+           - completed_this_run: [list of basenames]
+           - still_missing: [list of basenames]
+           - total_expected: N
+           - total_present_now: M
 
+  # NOTE: `recipe:` values MUST be quoted — YAML cannot start a token with `@`.
   - id: synthesize-audio
     condition: "{{produce_audio}}"
     type: recipe
-    recipe: @education:recipes/synthesize-audio.yaml
+    recipe: "@education:recipes/synthesize-audio.yaml"
     context:
       audio_dir: "audio"
       tts_model: "{{tts_model}}"
