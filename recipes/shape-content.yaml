@@ -11,6 +11,7 @@ context:
   subject_name: ""                              # Subject name
   audience: ""                                  # Target audience description (optional)
   sections_dir: ".design/sections"              # Where to write section files
+  parallel_batch_size: "6"                      # Max parallel section-author delegations per turn
 
 steps:
   - id: create-strategy
@@ -27,31 +28,80 @@ steps:
       1. Voice and tone guidelines calibrated for this subject and audience
       2. Depth calibration table — which concepts deserve deep treatment vs. overview
       3. Vocabulary rules — terms that need first-use explanation, banned words, banned framing
-      4. Section outline — one entry per section with primary concept, depth level, visual assets needed
+      4. Section outline — one entry per section with title, chapter number, order-within-chapter,
+         target filename, primary concept, depth level, visual assets needed, source_claims mapping
       5. Source claim mapping — which VC-XX claims feed which sections (internal only)
       6. Multi-modal guidance — how voice rules apply to audio narration, slides, speaker notes
 
       Apply the content rules from @education:context/content-model.md throughout.
 
+  # NOTE: Prior versions of this step used
+  #   `foreach: "{{create-strategy.section_list}}"`
+  # but the previous `type: agent` step has no output contract that produces
+  # a bound `section_list` variable, so the recipe engine rejects the foreach
+  # with "Invalid foreach syntax". This step replaces that pattern with a
+  # single non-foreach agent step that reads CONTENT-STRATEGY.md, enumerates
+  # the outline, and fans out to `section-author` in parallel batches. The
+  # step is IDEMPOTENT and RESUMABLE — re-running skips sections already on
+  # disk, so multiple invocations progressively fill the sections directory
+  # if the 600s per-step timeout is reached before completion.
   - id: write-sections
-    foreach: "{{create-strategy.section_list}}"
-    as: item
     type: agent
-    agent: education:agents/section-author
+    agent: foundation:zen-architect
     prompt: >
-      Write the section markdown for: {{item.title}} (Chapter {{item.chapter}})
+      Read .design/CONTENT-STRATEGY.md and write all section markdown files under {{sections_dir}}/.
 
-      Follow the content strategy in .design/CONTENT-STRATEGY.md exactly.
-      Use the verified claims listed for this section from the reconciliation.
+      Subject: {{subject_name}}
+      Reconciliation: {{reconciliation}}
+      Sections dir: {{sections_dir}}
+      Parallel batch size: {{parallel_batch_size}}
 
-      Section outline entry:
-      {{item.outline_entry}}
+      This step is RESUMABLE and may be run multiple times until every section
+      in the outline exists. You MUST stop well before the 600s per-step
+      timeout — aim for a ~480s (8-min) working budget.
 
-      Write to: {{sections_dir}}/{{item.filename}}
+      Procedure:
 
-      Include:
-      1. Proper YAML frontmatter with all blocks, statuses, and source_claims
-      2. Prose following inductive structure (concrete first, principle second)
-      3. Presentation slides section (condensed bullets)
-      4. Speaker notes section (full explanation for presenter)
-    collect: results
+      1. Read .design/CONTENT-STRATEGY.md fully. Locate the section outline
+         (item 4 in the strategy). Enumerate every section entry across all
+         chapters. For each entry capture: title, chapter number,
+         order-within-chapter, target filename (e.g. chNN-MM-slug.md),
+         depth level, visual assets needed, source_claims mapping.
+
+      2. Ensure {{sections_dir}} exists.
+
+      3. LIST the existing files in {{sections_dir}}. SKIP any filename from
+         the outline whose corresponding file already exists and is
+         non-empty. If nothing is missing, return "ALL SECTIONS PRESENT"
+         and stop.
+
+      4. For each remaining section, take up to {{parallel_batch_size}} at
+         a time and dispatch IN A SINGLE MESSAGE with parallel delegate
+         calls to education:agents/section-author. Each delegation must
+         include:
+           - Subject: {{subject_name}}
+           - Strategy path: .design/CONTENT-STRATEGY.md
+           - Reconciliation path: {{reconciliation}}
+           - Target output path: {{sections_dir}}/<filename>.md
+           - The outline entry verbatim (title, chapter, depth, visual
+             assets, source_claims)
+           - Content rules from @education:context/content-model.md
+           - Requirement: proper YAML frontmatter with blocks/statuses/
+             source_claims, prose following inductive structure (concrete
+             first, principle second), a Presentation Slides section
+             (condensed bullets), and a Speaker Notes section (full
+             explanation for presenter).
+
+      5. After the first batch returns, IF you estimate more batches will
+         fit inside a 480s working budget, dispatch another parallel batch.
+         Otherwise STOP and report which sections were completed this run
+         and which are still missing.
+
+      6. Do NOT write section markdown yourself. Every section file must
+         come from a section-author delegation.
+
+      7. Return a structured summary:
+           - completed_this_run: [list of filenames]
+           - still_missing: [list of filenames]
+           - total_in_outline: N
+           - total_present_now: M

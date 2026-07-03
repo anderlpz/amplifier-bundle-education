@@ -9,7 +9,10 @@ description: >
 
   Prerequisites: OPENAI_API_KEY environment variable, openai Python package,
   ffmpeg system binary. The check-prerequisites step verifies all three
-  before any TTS calls are made.
+  before any TTS calls are made, AND the verify-outputs step at the end
+  fails loudly if the expected MP3 files were not produced (belt-and-braces
+  for the case where a prerequisite failure inside an agent-run subprocess
+  is not propagated to the recipe engine as a step failure).
 
 context:
   audio_dir: "audio"                # Directory containing .txt scripts and .mp3 output
@@ -25,8 +28,7 @@ steps:
     agent: foundation:modular-builder
     prompt: >
       Verify that all prerequisites for TTS synthesis are available.
-      Write and run a short Python script that checks each requirement
-      and exits non-zero if any are missing.
+      Write and run a short Python script that checks each requirement.
 
       Check these three things:
 
@@ -39,8 +41,16 @@ steps:
       3. **ffmpeg system binary** — verify `shutil.which("ffmpeg")` returns a path.
          If it fails, print: "Missing system binary: ffmpeg. Install with: brew install ffmpeg (macOS) or apt install ffmpeg (Linux)"
 
-      If all three checks pass, print "All TTS prerequisites satisfied." and exit 0.
-      If any check fails, print all failures and exit 1.
+      Behaviour:
+      - If ALL three checks pass: print "All TTS prerequisites satisfied." and
+        finish your turn NORMALLY.
+      - If ANY check fails: after printing the failure(s), your FINAL turn
+        message MUST be exactly:
+          "PREREQ_FAILURE: <one-line human summary of what is missing>"
+        Do NOT continue past this step — do NOT attempt to synthesize.
+        The verify-outputs step at the end of this recipe will treat any
+        empty audio/ directory as a hard failure, so the recipe will not
+        silently report success when TTS never ran.
 
   - id: synthesize
     type: agent
@@ -50,6 +60,11 @@ steps:
 
       Write a Python script (synthesize_audio.py) that does the following,
       then execute it with `python synthesize_audio.py`.
+
+      **Guardrail:** Before writing anything, re-verify prerequisites in-script:
+      OPENAI_API_KEY set, `import openai` succeeds, `shutil.which("ffmpeg")`
+      is non-empty. If any fail, `sys.exit(1)` with a clear error. Never
+      silently produce zero outputs — always fail loud.
 
       **Inputs:** All .txt files in {{audio_dir}}/
       **Outputs:** Per-voice MP3s in {{audio_dir}}/{voice}/ subdirectories,
@@ -145,3 +160,32 @@ steps:
 
       **Dependencies:** openai (Python package), ffmpeg (system binary).
       Do not install these — just check they exist and error clearly if missing.
+
+  # Belt-and-braces post-condition. Even if the `synthesize` step's inner
+  # Python subprocess exits non-zero on a missing prerequisite, an
+  # agent-turn wrapper may still return "success" to the recipe engine,
+  # so the recipe as a whole can silently report `completed` with zero
+  # MP3 files produced. This step enforces the invariant "if there are
+  # .txt scripts to synthesize, there MUST be at least one MP3 per
+  # script by the time this recipe returns." If violated, it MUST fail
+  # loudly and refuse to declare success.
+  - id: verify-outputs
+    type: agent
+    agent: foundation:explorer
+    prompt: >
+      Verify that TTS synthesis actually produced MP3 files.
+
+      Procedure:
+      1. Count the .txt scripts in {{audio_dir}}/ (glob {{audio_dir}}/*.txt).
+      2. Count the .mp3 files at {{audio_dir}}/ root (glob {{audio_dir}}/*.mp3).
+      3. Compare:
+         - If .txt count == 0, print "No scripts to synthesize — nothing to verify." and finish.
+         - If .mp3 count == .txt count, print
+             "TTS verification passed: <N> scripts, <N> primary-voice MP3s."
+           and finish normally.
+         - Otherwise, your FINAL turn message MUST be exactly:
+             "SYNTHESIS_FAILURE: expected <N> primary-voice MP3s in
+              {{audio_dir}}/, found <M>. This usually means a prerequisite
+              (ffmpeg, OPENAI_API_KEY, openai package) was missing at
+              synthesize time. Inspect the synthesize step's output above."
+           Do NOT paper over the discrepancy.
