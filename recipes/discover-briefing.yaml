@@ -1,0 +1,36 @@
+name: discover-briefing
+version: "1.0.0"
+description: >
+  Phase 1 (BRIEFING lens). Read the source to ASSESS a specific question for a reader who
+  already knows the domain — not to teach it. Produces an evidence-based briefing reconciliation.
+context:
+  source_repo: ""
+  subject_name: ""
+  output_path: ".design/reconciliation.md"
+steps:
+  - id: structured-read
+    type: agent
+    agent: foundation:explorer
+    timeout: 1500
+    prompt: >
+      Read {{source_repo}} to ANSWER a specific question for a stakeholder who already knows
+      the domain. Do NOT write a tutorial, a "how it works" explainer, or a curriculum.
+
+      Question / subject: {{subject_name}}
+
+      Read with an ASSESSMENT lens — you are producing an evidence-based BRIEFING. As you read,
+      gather: the direct answer, current status, what is committed, what has changed or shifted
+      (with dates where the corpus gives them), what is at risk, and what is still open or
+      uncertain. Cite file:line evidence for every claim. Where the corpus is thin or silent,
+      say so explicitly — never invent.
+
+      Produce {{output_path}} with:
+      1. **Bottom line** — the direct answer to the question in 2-4 sentences.
+      2. **Verified status claims (VC-XX)** — factual claims with file:line evidence and confidence.
+      3. **Recent changes / deltas** — what moved, with dates where available.
+      4. **Commitments vs open questions** — firmly decided vs still unsettled.
+      5. **Risks & blockers** — what threatens the outcome.
+      6. **Evidence gaps** — where the corpus cannot answer; mark confidence: uncertain.
+
+      Do NOT include teaching order, "core concepts to learn", or aha-moments. This is an
+      assessment, not a lesson.
