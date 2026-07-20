@@ -1,0 +1,72 @@
+name: shape-content-briefing
+version: "1.0.0"
+description: >
+  Phase 2 (BRIEFING lens). Assessment strategy + briefing sections (bottom-line-up-front,
+  status, deltas, commitments-vs-shifts, risks, verdict). Same plan-sections + hyphen-free
+  foreach fix as shape-content v1.1; different voice and section arc.
+context:
+  reconciliation: ".design/reconciliation.md"
+  subject_name: ""
+  audience: ""
+  sections_dir: ".design/sections"
+steps:
+  - id: create-strategy
+    type: agent
+    agent: education:agents/content-strategist
+    timeout: 1800
+    prompt: >
+      Produce a BRIEFING content strategy (NOT a teaching curriculum) from the reconciliation.
+      Subject / question: {{subject_name}}
+      Audience: {{audience}}
+      Reconciliation: {{reconciliation}}
+
+      This is an assessment for a reader who already knows the domain and wants the answer,
+      the evidence, and a judgment — not to be taught. Write .design/CONTENT-STRATEGY.md with:
+      1. Voice: direct, evidence-led, decisive; bottom-line-up-front; no pedagogy, no
+         "let me explain the basics", no "in this section you will learn".
+      2. Depth calibration — which findings get depth vs a one-line mention.
+      3. Vocabulary — assume domain fluency; define only genuinely new terms.
+      4. Section outline — a BRIEFING ARC adapted to THIS question, using the exact heading
+         form "### Section N: Title" numbered from 1. Lead with the bottom line, then current
+         status, then the evidence / what changed, then commitments vs shifts, then risks &
+         blockers, then open questions, and end on a verdict. For each section give its
+         one-line takeaway, the source VC-XX claims, and any table/figure needed.
+      5. Source claim mapping (VC-XX -> sections).
+      6. Slide + speaker-note guidance in the same assessment voice (one takeaway per slide).
+      Apply the content rules in @education:context/content-model.md.
+  - id: plan-sections
+    type: agent
+    agent: foundation:explorer
+    timeout: 900
+    prompt: >
+      Read .design/CONTENT-STRATEGY.md and convert its section outline into a machine-readable
+      list. Emit exactly the sections defined, in order. For each object:
+        - "chapter": integer from 1
+        - "title": display title
+        - "slug": kebab-case slug of the title
+        - "filename": chapter zero-padded to 2 digits + "-" + slug + ".md"
+        - "outline_entry": the FULL verbatim outline entry for that section
+      Return ONLY: {"sections":[{"chapter":1,"title":"...","slug":"...","filename":"01-....md","outline_entry":"..."}]}
+    output: section_plan
+    parse_json: true
+  - id: write-sections
+    foreach: "{{section_plan.sections}}"
+    as: item
+    type: agent
+    agent: education:agents/section-author
+    timeout: 1200
+    prompt: >
+      Write section markdown for Chapter {{item.chapter}}: {{item.title}}.
+      Follow .design/CONTENT-STRATEGY.md exactly. This is a BRIEFING: assessment tone, direct,
+      evidence-led, decision-oriented. LEAD each section with its takeaway (bottom line first),
+      then the supporting evidence with citations drawn from .design/reconciliation.md. Be
+      decisive; where the evidence is thin, say so plainly. No teaching scaffolding.
+      Follow the frontmatter schema and block types in @education:context/content-model.md.
+      Section outline entry: {{item.outline_entry}}
+      Write ONLY to {{sections_dir}}/{{item.filename}}. The file MUST contain:
+      (1) YAML frontmatter: title, chapter, an ordered blocks list (status per block; asset_ref
+          for diagram/audio blocks), source_claims (VC-XX), depends_on;
+      (2) the briefing prose;
+      (3) a "## Presentation Slides" section (one takeaway per slide);
+      (4) a "## Speaker Notes" section.
+    collect: results
